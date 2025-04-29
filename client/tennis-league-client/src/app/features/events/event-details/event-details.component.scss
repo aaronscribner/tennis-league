@@ -1,0 +1,168 @@
+.event-details-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.loading-container, .not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  text-align: center;
+  
+  mat-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    margin-bottom: 20px;
+    color: #999;
+  }
+  
+  p {
+    margin-top: 15px;
+  }
+  
+  button {
+    margin-top: 20px;
+  }
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  
+  .event-title {
+    h1 {
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+    }
+    
+    h3 {
+      margin-top: 0;
+      color: #666;
+      font-weight: normal;
+    }
+  }
+  
+  .event-actions {
+    button {
+      margin-left: 10px;
+    }
+  }
+}
+
+mat-card {
+  margin-bottom: 20px;
+  
+  mat-card-title {
+    margin-bottom: 15px;
+  }
+}
+
+.event-info {
+  p {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    
+    mat-icon {
+      margin-right: 10px;
+      color: #3f51b5;
+    }
+  }
+  
+  .description {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+  }
+}
+
+.rsvp-options {
+  margin-bottom: 20px;
+  
+  .rsvp-radio-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    
+    mat-radio-button {
+      margin-bottom: 10px;
+    }
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.button-container {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  
+  button {
+    margin-right: 15px;
+  }
+}
+
+.inline-spinner {
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.cancelled-badge {
+  background-color: #f44336;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-left: 10px;
+  font-size: 14px;
+  font-weight: normal;
+}
+
+.no-lineup, .lineup-available {
+  text-align: center;
+  padding: 20px 0;
+  
+  .generate-lineup {
+    margin-top: 20px;
+  }
+  
+  .lineup-actions {
+    margin-top: 20px;
+    
+    button {
+      margin: 0 10px;
+    }
+  }
+}
+
+.available {
+  color: #4caf50;
+}
+
+.full {
+  color: #f44336;
+}
+
+@media (max-width: 768px) {
+  .event-header {
+    flex-direction: column;
+    
+    .event-actions {
+      margin-top: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      
+      button {
+        margin: 5px 10px 5px 0;
+      }
+    }
+  }
+}

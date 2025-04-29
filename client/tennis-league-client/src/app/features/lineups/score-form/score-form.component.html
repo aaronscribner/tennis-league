@@ -1,0 +1,64 @@
+<div class="score-form-container">
+  <div class="loading-container" *ngIf="loading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading match details...</p>
+  </div>
+
+  <ng-container *ngIf="!loading && match">
+    <h1>Record Match Score</h1>
+    <h2>Match #{{ match.matchNumber }}</h2>
+
+    <div class="match-info">
+      <div class="team-info team-a">
+        <h3>Team A</h3>
+        <p>{{ getTeamPlayers('A') }}</p>
+      </div>
+      
+      <div class="versus">VS</div>
+      
+      <div class="team-info team-b">
+        <h3>Team B</h3>
+        <p>{{ getTeamPlayers('B') }}</p>
+      </div>
+    </div>
+
+    <form [formGroup]="scoreForm" (ngSubmit)="submitScore()">
+      <div class="score-inputs">
+        <h3>Enter Scores</h3>
+        
+        <div class="score-row">
+          <mat-form-field appearance="outline" class="score-input">
+            <mat-label>Team A Score</mat-label>
+            <input type="number" matInput formControlName="teamAScore" min="0" required>
+            <mat-error *ngIf="scoreForm.get('teamAScore')?.hasError('required')">Score is required</mat-error>
+            <mat-error *ngIf="scoreForm.get('teamAScore')?.hasError('min')">Score must be at least 0</mat-error>
+          </mat-form-field>
+          
+          <div class="score-separator">-</div>
+          
+          <mat-form-field appearance="outline" class="score-input">
+            <mat-label>Team B Score</mat-label>
+            <input type="number" matInput formControlName="teamBScore" min="0" required>
+            <mat-error *ngIf="scoreForm.get('teamBScore')?.hasError('required')">Score is required</mat-error>
+            <mat-error *ngIf="scoreForm.get('teamBScore')?.hasError('min')">Score must be at least 0</mat-error>
+          </mat-form-field>
+        </div>
+        
+        <mat-form-field appearance="outline" class="notes-field">
+          <mat-label>Match Notes (optional)</mat-label>
+          <textarea matInput formControlName="notes" rows="3" placeholder="Add any notes about the match (e.g. retired player, weather conditions)"></textarea>
+        </mat-form-field>
+      </div>
+
+      <div class="button-row">
+        <button mat-button type="button" (click)="navigateBack()">Cancel</button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="scoreForm.invalid || submitting">
+          <span *ngIf="!match.isCompleted">Submit Score</span>
+          <span *ngIf="match.isCompleted">Update Score</span>
+          <mat-icon>check</mat-icon>
+        </button>
+        <mat-spinner *ngIf="submitting" diameter="24" class="spinner"></mat-spinner>
+      </div>
+    </form>
+  </ng-container>
+</div>

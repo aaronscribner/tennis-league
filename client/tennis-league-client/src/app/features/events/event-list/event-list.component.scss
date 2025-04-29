@@ -1,0 +1,138 @@
+.event-list-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  
+  h1 {
+    margin: 0;
+  }
+}
+
+.loading-container, .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  
+  p {
+    margin-top: 15px;
+  }
+  
+  mat-icon {
+    font-size: 48px;
+    height: 48px;
+    width: 48px;
+    color: #999;
+    margin-bottom: 10px;
+  }
+}
+
+.events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.event-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  
+  &.cancelled {
+    opacity: 0.7;
+    
+    &::after {
+      content: "CANCELLED";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-30deg);
+      font-size: 30px;
+      color: red;
+      border: 3px solid red;
+      padding: 5px 10px;
+      border-radius: 5px;
+      background-color: rgba(255, 255, 255, 0.7);
+      pointer-events: none;
+    }
+  }
+  
+  mat-card-content {
+    flex-grow: 1;
+  }
+}
+
+.event-avatar {
+  background-size: cover;
+  
+  &.singles {
+    background-image: url('/assets/singles-icon.png');
+  }
+  
+  &.doubles {
+    background-image: url('/assets/doubles-icon.png');
+  }
+  
+  &.mixed {
+    background-image: url('/assets/mixed-icon.png');
+  }
+}
+
+.location {
+  display: flex;
+  align-items: center;
+  margin-top: 12px;
+  
+  mat-icon {
+    margin-right: 5px;
+    color: #3f51b5;
+  }
+}
+
+.description {
+  margin-top: 10px;
+  font-style: italic;
+  color: #666;
+}
+
+.event-meta {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+.cancelled-badge {
+  background-color: #f44336;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 10px;
+  font-size: 12px;
+}
+
+.full {
+  color: #f44336;
+}
+
+.available {
+  color: #4caf50;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    
+    button {
+      margin-top: 15px;
+    }
+  }
+}

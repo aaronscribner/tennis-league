@@ -1,0 +1,66 @@
+<div class="profile-container">
+  <h1>My Profile</h1>
+
+  <mat-card>
+    <mat-card-content>
+      <div *ngIf="loading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading your profile...</p>
+      </div>
+
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" *ngIf="!loading">
+        <div class="form-row">
+          <mat-form-field appearance="outline">
+            <mat-label>First Name</mat-label>
+            <input matInput formControlName="firstName" required>
+            <mat-error *ngIf="profileForm.get('firstName')?.hasError('required')">
+              First name is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last Name</mat-label>
+            <input matInput formControlName="lastName" required>
+            <mat-error *ngIf="profileForm.get('lastName')?.hasError('required')">
+              Last name is required
+            </mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" readonly>
+          <mat-icon matSuffix>email</mat-icon>
+          <mat-hint>Email cannot be changed</mat-hint>
+        </mat-form-field>
+
+        <h3>Tennis Preferences</h3>
+        
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Skill Level</mat-label>
+          <mat-select formControlName="skillLevel" required>
+            <mat-option *ngFor="let level of skillLevels" [value]="level.value">
+              {{ level.label }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="profileForm.get('skillLevel')?.hasError('required')">
+            Please select your skill level
+          </mat-error>
+        </mat-form-field>
+
+        <div class="checkbox-container">
+          <mat-checkbox formControlName="preferSingles">I prefer playing singles matches</mat-checkbox>
+        </div>
+      
+        <div class="button-container">
+          <button mat-raised-button color="primary" type="submit" [disabled]="profileForm.invalid || saving">
+            <mat-icon>save</mat-icon>
+            Save Profile
+          </button>
+          <mat-progress-spinner *ngIf="saving" mode="indeterminate" diameter="20" class="inline-spinner">
+          </mat-progress-spinner>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

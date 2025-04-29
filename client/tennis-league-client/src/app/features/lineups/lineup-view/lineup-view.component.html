@@ -1,0 +1,104 @@
+<div class="lineup-container">
+  <div class="loading-container" *ngIf="loadingLineup || loadingEvent">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading match lineup...</p>
+  </div>
+
+  <ng-container *ngIf="!loadingLineup && !loadingEvent">
+    <!-- Header -->
+    <div class="lineup-header" *ngIf="lineup && event">
+      <h1>Match Lineup</h1>
+      <h2>{{ event.title }}</h2>
+      <h3>{{ event.date | date: 'EEEE, MMMM d, y, h:mm a' }}</h3>
+      <h4>{{ event.location }}</h4>
+    </div>
+
+    <div *ngIf="!lineup" class="no-lineup">
+      <mat-icon>playlist_remove</mat-icon>
+      <h2>No Lineup Available</h2>
+      <p>A lineup has not been generated for this event yet.</p>
+      <button mat-raised-button color="primary" (click)="backToEvent()">
+        <mat-icon>arrow_back</mat-icon>
+        Back to Event
+      </button>
+    </div>
+
+    <ng-container *ngIf="lineup">
+      <!-- Admin Actions -->
+      <div class="admin-actions" *ngIf="isAdmin">
+        <button mat-stroked-button color="primary" (click)="regenerateLineup()">
+          <mat-icon>refresh</mat-icon>
+          Regenerate Lineup
+        </button>
+        <button mat-stroked-button color="primary" (click)="backToEvent()">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Event
+        </button>
+      </div>
+
+      <!-- Match List -->
+      <div class="matches-container">
+        <div class="match-card" *ngFor="let match of lineup.matches" [class.completed]="match.isCompleted" [class.your-match]="isCurrentUserInMatch(match)">
+          <div class="match-header">
+            <span class="match-number">Match #{{ match.matchNumber }}</span>
+            <span class="match-time">{{ match.scheduledTime | date: 'shortTime' }}</span>
+          </div>
+          <div class="match-content">
+            <!-- Team A -->
+            <div class="team" [class.winner]="match.isCompleted && match.teamA.score > match.teamB.score">
+              <div class="team-label">Team A</div>
+              <div class="player" *ngFor="let player of match.teamA.players">
+                <div class="player-name">{{ getUserFullName(player) }}</div>
+                <div class="player-level">{{ getPlayerSkillLevel(player) }}</div>
+              </div>
+              <div class="score" *ngIf="match.isCompleted">{{ match.teamA.score }}</div>
+            </div>
+            
+            <!-- Team B -->
+            <div class="team" [class.winner]="match.isCompleted && match.teamB.score > match.teamA.score">
+              <div class="team-label">Team B</div>
+              <div class="player" *ngFor="let player of match.teamB.players">
+                <div class="player-name">{{ getUserFullName(player) }}</div>
+                <div class="player-level">{{ getPlayerSkillLevel(player) }}</div>
+              </div>
+              <div class="score" *ngIf="match.isCompleted">{{ match.teamB.score }}</div>
+            </div>
+          </div>
+
+          <!-- Match Actions -->
+          <div class="match-actions">
+            <ng-container *ngIf="!match.isCompleted">
+              <button mat-raised-button color="accent" 
+                      *ngIf="isCurrentUserInMatch(match) || isAdmin"
+                      (click)="recordScore(match)">
+                <mat-icon>score</mat-icon>
+                Record Score
+              </button>
+              <span *ngIf="!isCurrentUserInMatch(match) && !isAdmin">
+                Waiting for score...
+              </span>
+            </ng-container>
+            <div class="match-result" *ngIf="match.isCompleted">
+              <span class="completed-label">Completed</span>
+              <span class="match-score">
+                {{ match.teamA.score }} - {{ match.teamB.score }}
+              </span>
+            </div>
+          </div>
+          
+          <div class="match-notes" *ngIf="match.notes">
+            <strong>Notes:</strong> {{ match.notes }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Back Button for Non-Admins -->
+      <div class="back-button" *ngIf="!isAdmin">
+        <button mat-raised-button color="primary" (click)="backToEvent()">
+          <mat-icon>arrow_back</mat-icon>
+          Back to Event
+        </button>
+      </div>
+    </ng-container>
+  </ng-container>
+</div>

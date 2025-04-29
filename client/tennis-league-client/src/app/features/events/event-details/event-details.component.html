@@ -1,0 +1,152 @@
+<div class="event-details-container">
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading event details...</p>
+  </div>
+
+  <div *ngIf="!loading && !event" class="not-found">
+    <mat-icon>error</mat-icon>
+    <h2>Event Not Found</h2>
+    <p>Sorry, the event you're looking for doesn't exist or has been removed.</p>
+    <button mat-raised-button color="primary" routerLink="/events">Back to Events</button>
+  </div>
+
+  <ng-container *ngIf="!loading && event">
+    <!-- Event Header -->
+    <div class="event-header">
+      <div class="event-title">
+        <h1>{{ event.title }} 
+          <span *ngIf="event.isCancelled" class="cancelled-badge">Cancelled</span>
+        </h1>
+        <h3>{{ event.date | date: 'EEEE, MMMM d, y, h:mm a' }}</h3>
+      </div>
+      <div class="event-actions">
+        <button *ngIf="isAdmin && !event.isCancelled" mat-stroked-button color="primary" (click)="editEvent()">
+          <mat-icon>edit</mat-icon> Edit
+        </button>
+        <button *ngIf="isAdmin && !event.isCancelled" mat-stroked-button color="warn" (click)="cancelEvent()">
+          <mat-icon>cancel</mat-icon> Cancel Event
+        </button>
+      </div>
+    </div>
+
+    <!-- Event Details Card -->
+    <mat-card>
+      <mat-card-content>
+        <div class="event-info">
+          <p class="location">
+            <mat-icon>location_on</mat-icon>
+            <span>{{ event.location }}</span>
+          </p>
+          <p class="event-type">
+            <mat-icon>sports_tennis</mat-icon>
+            <span>{{ event.eventType | titlecase }} Tennis</span>
+          </p>
+          <p class="capacity">
+            <mat-icon>people</mat-icon>
+            <span>
+              {{ event.attendees ? event.attendees.length : 0 }} / {{ event.maxPlayers }} players
+              <span *ngIf="!isEventFull() && !event.isCancelled" class="available">
+                ({{ event.maxPlayers - (event.attendees ? event.attendees.length : 0) }} spots available)
+              </span>
+              <span *ngIf="isEventFull()" class="full">
+                (Event is full)
+              </span>
+            </span>
+          </p>
+          <p *ngIf="event.description" class="description">
+            {{ event.description }}
+          </p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- RSVP Section -->
+    <mat-card *ngIf="(isAuthenticated$ | async) && !event.isCancelled">
+      <mat-card-header>
+        <mat-card-title>RSVP to This Event</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="loadingRsvp" class="loading-container">
+          <mat-spinner diameter="30"></mat-spinner>
+          <p>Loading your RSVP...</p>
+        </div>
+
+        <form [formGroup]="rsvpForm" (ngSubmit)="submitRsvp()" *ngIf="!loadingRsvp">
+          <div class="rsvp-options">
+            <mat-radio-group formControlName="isAttending" class="rsvp-radio-group">
+              <mat-radio-button [value]="true" [disabled]="isEventFull() && (!rsvp || !rsvp.isAttending)">
+                I'll attend
+              </mat-radio-button>
+              <mat-radio-button [value]="false">
+                I can't attend
+              </mat-radio-button>
+            </mat-radio-group>
+
+            <mat-form-field appearance="outline" *ngIf="rsvpForm.get('isAttending')?.value">
+              <mat-label>Preference</mat-label>
+              <mat-select formControlName="preferSingles">
+                <mat-option [value]="true">I prefer singles matches</mat-option>
+                <mat-option [value]="false">I prefer doubles matches</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width" *ngIf="rsvpForm.get('isAttending')?.value">
+            <mat-label>Additional Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="3" placeholder="Any additional information (optional)"></textarea>
+          </mat-form-field>
+
+          <div class="button-container">
+            <button mat-raised-button color="primary" type="submit" [disabled]="submittingRsvp || (isEventFull() && (!rsvp || !rsvp.isAttending))">
+              {{ rsvp ? 'Update RSVP' : 'Submit RSVP' }}
+            </button>
+            <mat-progress-spinner *ngIf="submittingRsvp" mode="indeterminate" diameter="20" class="inline-spinner">
+            </mat-progress-spinner>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Match Lineup Section -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Match Lineup</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="loadingLineup" class="loading-container">
+          <mat-spinner diameter="30"></mat-spinner>
+          <p>Loading lineup...</p>
+        </div>
+
+        <div *ngIf="!loadingLineup && !lineup" class="no-lineup">
+          <p *ngIf="!isAdmin">No match lineup has been generated yet.</p>
+          <div *ngIf="isAdmin && !event.isCancelled" class="generate-lineup">
+            <p>Generate a match lineup for this event:</p>
+            <button mat-raised-button color="primary" (click)="generateLineup()" [disabled]="generatingLineup">
+              <mat-icon>shuffle</mat-icon> Generate Lineup
+              <mat-progress-spinner *ngIf="generatingLineup" mode="indeterminate" diameter="20" class="inline-spinner">
+              </mat-progress-spinner>
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="!loadingLineup && lineup" class="lineup-available">
+          <p>Match lineup is available!</p>
+          
+          <div class="lineup-actions">
+            <button mat-raised-button color="primary" (click)="viewLineup()">
+              <mat-icon>visibility</mat-icon> View Lineup
+            </button>
+            
+            <button *ngIf="isAdmin && !event.isCancelled" mat-stroked-button color="accent" (click)="regenerateLineup()" [disabled]="generatingLineup">
+              <mat-icon>refresh</mat-icon> Regenerate
+              <mat-progress-spinner *ngIf="generatingLineup" mode="indeterminate" diameter="20" class="inline-spinner">
+              </mat-progress-spinner>
+            </button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </ng-container>
+</div>

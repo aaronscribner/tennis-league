@@ -1,0 +1,53 @@
+import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterOutlet } from '@angular/router';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { Observable } from 'rxjs';
+import { map, shareReplay } from 'rxjs/operators';
+import { SharedModule } from './shared/shared.module';
+import { CoreModule } from './core/core.module';
+import { AuthService } from './core/services/auth.service';
+import { UserRole } from './core/models/user.model';
+
+@Component({
+  selector: 'app-root',
+  standalone: true,
+  imports: [CommonModule, RouterOutlet, SharedModule, CoreModule],
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.scss']
+})
+export class AppComponent implements OnInit {
+  title = 'Tennis League';
+  isAuthenticated$: Observable<boolean>;
+  isAdmin$: Observable<boolean>;
+  isHandset$: Observable<boolean>;
+
+  constructor(
+    private authService: AuthService,
+    private breakpointObserver: BreakpointObserver
+  ) {
+    this.isHandset$ = this.breakpointObserver.observe(Breakpoints.Handset)
+      .pipe(
+        map(result => result.matches),
+        shareReplay()
+      );
+      
+    this.isAuthenticated$ = this.authService.isAuthenticated();
+    this.isAdmin$ = this.authService.getUser().pipe(
+      map(user => user?.role === UserRole.ADMIN)
+    );
+  }
+
+  ngOnInit() {
+    // Preload user data if authenticated
+    this.authService.getUser().subscribe();
+  }
+
+  login() {
+    this.authService.login();
+  }
+
+  logout() {
+    this.authService.logout();
+  }
+}

@@ -1,0 +1,68 @@
+<div class="match-card" [class.match-card--compact]="compact" [class.user-match]="isUserMatch">
+  <div class="match-card__header">
+    <div class="match-card__title">
+      <h3>Match #{{ match.matchNumber }}</h3>
+      <div class="match-card__status" *ngIf="match.isCompleted; else notCompleted">
+        <span class="match-status completed">Completed</span>
+      </div>
+      <ng-template #notCompleted>
+        <div class="match-card__status">
+          <span class="match-status scheduled">Scheduled</span>
+        </div>
+      </ng-template>
+    </div>
+    <div class="match-card__time" *ngIf="!compact && match.startTime">
+      {{ match.startTime | date:'shortTime' }} - {{ match.court || 'Court TBD' }}
+    </div>
+  </div>
+
+  <div class="match-card__content">
+    <div class="match-card__teams">
+      <div class="match-card__team" [class.winner]="isWinner('A')">
+        <div class="team-name">Team A</div>
+        <div class="team-players">
+          <ng-container *ngIf="!compact">
+            <!-- Use the safe array property we created -->
+            <div *ngFor="let player of teamAPlayersList" class="player-info">
+              <div class="player-name">{{ getPlayerName(player) }}</div>
+              <div class="player-level">Level: {{ getPlayerLevel(player) }}</div>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="compact">
+            <div class="team-players-compact">{{ getTeamPlayerNames('A') }}</div>
+          </ng-container>
+        </div>
+        <div class="team-score" *ngIf="match.isCompleted">
+          {{ match.teamA.score || 0 }}
+        </div>
+      </div>
+      
+      <div class="match-card__vs">VS</div>
+      
+      <div class="match-card__team" [class.winner]="isWinner('B')">
+        <div class="team-name">Team B</div>
+        <div class="team-players">
+          <ng-container *ngIf="!compact">
+            <!-- Use the safe array property we created -->
+            <div *ngFor="let player of teamBPlayersList" class="player-info">
+              <div class="player-name">{{ getPlayerName(player) }}</div>
+              <div class="player-level">Level: {{ getPlayerLevel(player) }}</div>
+            </div>
+          </ng-container>
+          <ng-container *ngIf="compact">
+            <div class="team-players-compact">{{ getTeamPlayerNames('B') }}</div>
+          </ng-container>
+        </div>
+        <div class="team-score" *ngIf="match.isCompleted">
+          {{ match.teamB.score || 0 }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="match-card__footer" *ngIf="canRecordScore && !match.isCompleted && isUserMatch">
+    <button class="btn btn-primary" (click)="onRecordScore.emit(match)">
+      Record Score
+    </button>
+  </div>
+</div>
