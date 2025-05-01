@@ -1,27 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Lineup, LineupDocument } from '../models/match.schema';
-import { Match, MatchDocument, Team } from '../models/match.schema';
-import { Event, EventDocument, EventType } from '../models/event.schema';
-import { Rsvp, RsvpDocument } from '../models/rsvp.schema';
+import { Event, EventDocument } from '../models/event.schema';
 import { User, UserDocument } from '../models/user.schema';
+import { Match, Team } from '../models/match.model';
 
 @Injectable()
 export class LineupsService {
   constructor(
     @InjectModel(Lineup.name) private lineupModel: Model<LineupDocument>,
-    @InjectModel(Match.name) private matchModel: Model<MatchDocument>,
     @InjectModel(Event.name) private eventModel: Model<EventDocument>,
-    @InjectModel(Rsvp.name) private rsvpModel: Model<RsvpDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
-  async findByEvent(eventId: string): Promise<Lineup> {
-    return this.lineupModel.findOne({ event: eventId })
-      .populate('matches.teamA.players')
-      .populate('matches.teamB.players')
+  async getLineupByEvent(eventId: string): Promise<Lineup> {
+    const lineup = await this.lineupModel.findOne({ event: eventId })
+      .populate('event')
       .exec();
+    
+    if (!lineup) {
+      throw new NotFoundException(`Lineup for event ${eventId} not found`);
+    }
+    
+    return lineup;
   }
 
   async createLineup(eventId: string): Promise<Lineup> {
@@ -31,32 +33,24 @@ export class LineupsService {
       return existingLineup;
     }
 
-    // Get event details to determine singles or doubles
+    // Get event details
     const event = await this.eventModel.findById(eventId);
     if (!event) {
-      throw new Error('Event not found');
+      throw new NotFoundException(`Event with ID ${eventId} not found`);
     }
 
-    // Get all attending users from RSVPs
-    const rsvps = await this.rsvpModel.find({ 
-      event: eventId,
-      isAttending: true 
-    }).populate('user').exec();
+    // Get all attending users from event
+    const users = await this.userModel.find({ 
+      _id: { $in: event.attendees } 
+    }).exec();
 
-    if (rsvps.length === 0) {
+    if (users.length === 0) {
       throw new Error('No attendees found for this event');
     }
 
-    // Generate matches based on event type
-    let matches: Match[] = [];
+    // Generate matches
+    const matches = this.createMatchesFromUsers(users, event);
     
-    if (event.eventType === EventType.SINGLES) {
-      matches = await this.generateSinglesLineup(event, rsvps);
-    } else {
-      // For both DOUBLES and MIXED event types
-      matches = await this.generateDoublesLineup(event, rsvps);
-    }
-
     // Create the lineup
     const lineup = new this.lineupModel({
       event: eventId,
@@ -68,69 +62,65 @@ export class LineupsService {
     return lineup.save();
   }
 
-  async updateLineup(lineupId: string, matchUpdates: any[]): Promise<Lineup> {
+  async updateMatchInLineup(
+    lineupId: string,
+    update: { matchId: string, teamAPlayers?: string[], teamBPlayers?: string[] }
+  ): Promise<Lineup> {
     const lineup = await this.lineupModel.findById(lineupId);
     if (!lineup) {
-      throw new Error('Lineup not found');
+      throw new NotFoundException(`Lineup with ID ${lineupId} not found`);
     }
-
-    // Update each match in the lineup
-    for (const update of matchUpdates) {
-      const matchIndex = lineup.matches.findIndex(
-        m => m._id.toString() === update.matchId
-      );
-      
-      if (matchIndex >= 0) {
-        if (update.teamAScore !== undefined) {
-          lineup.matches[matchIndex].teamA.score = update.teamAScore;
-        }
-        
-        if (update.teamBScore !== undefined) {
-          lineup.matches[matchIndex].teamB.score = update.teamBScore;
-        }
-        
-        if (update.isCompleted !== undefined) {
-          lineup.matches[matchIndex].isCompleted = update.isCompleted;
-        }
-        
-        if (update.notes !== undefined) {
-          lineup.matches[matchIndex].notes = update.notes;
-        }
-      }
+    
+    // Use type assertion to access _id
+    const matchIndex = lineup.matches.findIndex(
+      m => (m as any)._id && (m as any)._id.toString() === update.matchId
+    );
+    
+    if (matchIndex === -1) {
+      throw new NotFoundException(`Match with ID ${update.matchId} not found in lineup ${lineupId}`);
     }
-
-    return this.lineupModel.findByIdAndUpdate(lineupId, 
-      { matches: lineup.matches }, 
-      { new: true }
-    ).exec();
+    
+    if (update.teamAPlayers) {
+      lineup.matches[matchIndex].teamA.players = update.teamAPlayers as any[];
+    }
+    
+    if (update.teamBPlayers) {
+      lineup.matches[matchIndex].teamB.players = update.teamBPlayers as any[];
+    }
+    
+    return lineup.save();
   }
 
   async republishLineup(lineupId: string): Promise<Lineup> {
-    // Delete the old lineup
-    const oldLineup = await this.lineupModel.findById(lineupId);
-    if (!oldLineup) {
-      throw new Error('Lineup not found');
+    const lineup = await this.lineupModel.findByIdAndUpdate(lineupId,
+      { isPublished: true },
+      { new: true }
+    ).populate('event').exec();
+    
+    if (!lineup) {
+      throw new NotFoundException(`Lineup with ID ${lineupId} not found`);
     }
     
-    const eventId = oldLineup.event;
-    await this.lineupModel.findByIdAndDelete(lineupId);
-    
-    // Create a new lineup
-    return this.createLineup(eventId.toString());
+    return lineup;
   }
 
-  async getMatchById(matchId: string): Promise<Match> {
-    const lineupWithMatch = await this.lineupModel.findOne({
-      'matches._id': matchId
-    });
+  async getMatch(matchId: string): Promise<Match> {
+    const lineup = await this.lineupModel.findOne({
+      matches: { $elemMatch: { _id: matchId } }
+    }).exec();
     
-    if (!lineupWithMatch) {
-      throw new Error('Match not found');
+    if (!lineup) {
+      throw new NotFoundException(`Match with ID ${matchId} not found in any lineup`);
     }
     
-    const match = lineupWithMatch.matches.find(
-      m => m._id.toString() === matchId
+    // Use type assertion to access _id
+    const match = lineup.matches.find(
+      m => (m as any)._id && (m as any)._id.toString() === matchId
     );
+    
+    if (!match) {
+      throw new NotFoundException(`Match with ID ${matchId} not found in lineup`);
+    }
     
     return match;
   }
@@ -138,131 +128,130 @@ export class LineupsService {
   async updateMatchScore(
     matchId: string, 
     teamAScore: number, 
-    teamBScore: number
+    teamBScore: number, 
+    notes?: string
   ): Promise<Match> {
     const lineup = await this.lineupModel.findOne({
-      'matches._id': matchId
-    });
+      matches: { $elemMatch: { _id: matchId } }
+    }).exec();
     
     if (!lineup) {
-      throw new Error('Match not found');
+      throw new NotFoundException(`Match with ID ${matchId} not found in any lineup`);
     }
     
+    // Use type assertion to access _id
     const matchIndex = lineup.matches.findIndex(
-      m => m._id.toString() === matchId
+      m => (m as any)._id && (m as any)._id.toString() === matchId
     );
     
-    if (matchIndex < 0) {
-      throw new Error('Match not found');
+    if (matchIndex === -1) {
+      throw new NotFoundException(`Match with ID ${matchId} not found in lineup`);
     }
     
+    // Update the match with scores and mark as completed
     lineup.matches[matchIndex].teamA.score = teamAScore;
     lineup.matches[matchIndex].teamB.score = teamBScore;
     lineup.matches[matchIndex].isCompleted = true;
     
-    await this.lineupModel.findByIdAndUpdate(lineup._id, 
-      { matches: lineup.matches }, 
-      { new: true }
-    ).exec();
+    if (notes) {
+      lineup.matches[matchIndex].notes = notes;
+    }
+    
+    await lineup.save();
     
     return lineup.matches[matchIndex];
   }
 
-  private async generateSinglesLineup(event: Event, rsvps: Rsvp[]): Promise<Match[]> {
-    // Prioritize users who prefer singles
-    let players = rsvps
-      .filter(rsvp => rsvp.preferSingles)
-      .map(rsvp => rsvp.user);
+  // Helper method to create matches from a list of users
+  private createMatchesFromUsers(users: User[], event: Event): Match[] {
+    if (users.length < 2) {
+      return [];
+    }
     
-    // If we don't have enough singles players, add others
-    if (players.length < 2) {
-      const otherPlayers = rsvps
-        .filter(rsvp => !rsvp.preferSingles)
-        .map(rsvp => rsvp.user);
+    // Create a deep copy of the players array so we can modify it
+    const playersCopy = [...users];
+    
+    // Simple shuffling of players
+    this.shuffleArray(playersCopy);
+    
+    const matches: Match[] = [];
+    let matchNumber = 1;
+    
+    // Create matches by pairing players
+    while (playersCopy.length >= 4) {
+      const teamAPlayers = [playersCopy.pop(), playersCopy.pop()];
+      const teamBPlayers = [playersCopy.pop(), playersCopy.pop()];
       
-      players = [...players, ...otherPlayers];
+      matches.push({
+        matchNumber,
+        teamA: { players: teamAPlayers },
+        teamB: { players: teamBPlayers },
+        isCompleted: false,
+        scheduledTime: new Date(event.date)
+      });
+      
+      matchNumber++;
     }
     
-    // Shuffle the players for random pairings
-    players = this.shuffleArray(players);
-    
-    const matches: Match[] = [];
-    
-    // Create singles matches (1v1)
-    for (let i = 0; i < players.length - 1; i += 2) {
-      if (i + 1 < players.length) {
-        const teamA: Team = { players: [players[i]], score: 0 };
-        const teamB: Team = { players: [players[i + 1]], score: 0 };
-        
-        const match = new this.matchModel({
-          event: event._id,
-          matchNumber: matches.length + 1,
-          teamA,
-          teamB,
-          isCompleted: false,
-          scheduledTime: new Date(event.date)
-        });
-        
-        matches.push(match);
+    // If we have leftover players, create a match with them (for odd numbers)
+    if (playersCopy.length > 0) {
+      const match: Match = {
+        matchNumber,
+        teamA: { players: [] },
+        teamB: { players: [] },
+        isCompleted: false,
+        scheduledTime: new Date(event.date)
+      };
+      
+      if (playersCopy.length === 1 || playersCopy.length === 3) {
+        match.teamA.players = [playersCopy[0]];
+        if (playersCopy.length === 3) {
+          match.teamB.players = [playersCopy[1], playersCopy[2]];
+        }
+      } else if (playersCopy.length === 2) {
+        match.teamA.players = [playersCopy[0]];
+        match.teamB.players = [playersCopy[1]];
       }
+      
+      matches.push(match);
     }
     
     return matches;
   }
 
-  private async generateDoublesLineup(event: Event, rsvps: Rsvp[]): Promise<Match[]> {
-    // Prioritize users who prefer doubles
-    let players = rsvps
-      .filter(rsvp => !rsvp.preferSingles)
-      .map(rsvp => rsvp.user);
-    
-    // If we need more players, add singles players
-    const singlesPlayers = rsvps
-      .filter(rsvp => rsvp.preferSingles)
-      .map(rsvp => rsvp.user);
-    
-    players = [...players, ...singlesPlayers];
-    
-    // Shuffle the players for random pairings
-    players = this.shuffleArray(players);
-    
-    const matches: Match[] = [];
-    
-    // Create doubles matches (2v2)
-    for (let i = 0; i < players.length - 3; i += 4) {
-      if (i + 3 < players.length) {
-        const teamA: Team = { 
-          players: [players[i], players[i + 1]], 
-          score: 0 
-        };
-        
-        const teamB: Team = { 
-          players: [players[i + 2], players[i + 3]], 
-          score: 0 
-        };
-        
-        const match = new this.matchModel({
-          event: event._id,
-          matchNumber: matches.length + 1,
-          teamA,
-          teamB,
-          isCompleted: false,
-          scheduledTime: new Date(event.date)
-        });
-        
-        matches.push(match);
-      }
-    }
-    
-    return matches;
-  }
-
-  private shuffleArray(array: any[]): any[] {
-    const shuffled = [...array];
-    for (let i = shuffled.length - 1; i > 0; i--) {
+  // Helper method to shuffle an array
+  private shuffleArray(array: any[]): void {
+    for (let i = array.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      [array[i], array[j]] = [array[j], array[i]];
     }
-    return shuffled;
+  }
+
+  async generateLineup(eventId: string): Promise<Lineup> {
+    // Get event details
+    const event = await this.eventModel.findById(eventId).exec();
+    if (!event) {
+      throw new NotFoundException(`Event with ID ${eventId} not found`);
+    }
+    
+    // Get all users for the event
+    const users = await this.userModel.find({ 
+      _id: { $in: event.attendees } 
+    }).exec();
+    
+    if (users.length === 0) {
+      throw new Error('No attendees found for this event');
+    }
+    
+    // Create lineup object with matches
+    const lineup = new this.lineupModel({
+      event: event._id,
+      matches: this.createMatchesFromUsers(users, event),
+      isPublished: true,
+      generationType: 'auto',
+    });
+    
+    // Save and return the new lineup
+    return await lineup.save();
   }
 }

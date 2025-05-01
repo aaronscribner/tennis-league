@@ -1,12 +1,26 @@
 .callback-container {
   display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+  text-align: center;
+  padding: 20px;
+}
+
+.loading, .error {
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: calc(100vh - 100px);
-  
-  h2 {
-    margin-top: 20px;
-    color: #3f51b5;
-  }
+  gap: 20px;
+}
+
+.error mat-icon {
+  font-size: 48px;
+  height: 48px;
+  width: 48px;
+}
+
+button {
+  margin-top: 16px;
 }

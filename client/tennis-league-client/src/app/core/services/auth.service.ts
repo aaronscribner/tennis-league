@@ -1,83 +1,113 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { AuthService as Auth0Service } from '@auth0/auth0-angular';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from, of, throwError } from 'rxjs';
-import { catchError, concatMap, tap } from 'rxjs/operators';
+import { catchError, concatMap, tap, map, switchMap, shareReplay } from 'rxjs/operators';
+import { User, UserRole } from '../models/user.model';
+import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
-import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = `${environment.apiUrl}/users`;
-  private user: User | null = null;
-
-  constructor(
-    private auth0: Auth0Service,
-    private http: HttpClient
-  ) {}
-
-  // Log in with Auth0
+  private auth0 = inject(Auth0Service);
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  
+  // Use signal pattern for user state
+  private userSignal = signal<User | null>(null);
+  
+  // Public reactive user state with shareReplay to prevent multiple API calls
+  public user$ = this.auth0.isAuthenticated$.pipe(
+    concatMap(isAuthenticated => {
+      if (isAuthenticated) {
+        // First get Auth0 profile
+        return this.auth0.user$.pipe(
+          switchMap(profile => {
+            if (profile?.sub) {
+              // Then get or create user in our backend
+              return this.getUserProfileFromBackend().pipe(
+                catchError(() => {
+                  // If user doesn't exist in our backend, create it
+                  if (profile) {
+                    return this.createUserInBackend({
+                      auth0Id: profile.sub,
+                      email: profile.email,
+                      firstName: profile.given_name || profile.name?.split(' ')[0] || '',
+                      lastName: profile.family_name || profile.name?.split(' ').slice(1).join(' ') || '',
+                    });
+                  }
+                  return of(null);
+                })
+              );
+            }
+            return of(null);
+          })
+        );
+      }
+      return of(null);
+    }),
+    tap(user => {
+      this.userSignal.set(user);
+    }),
+    shareReplay(1)
+  );
+  
+  constructor() {
+    // Initialize user$ by subscribing once
+    this.user$.subscribe();
+  }
+  
+  // Current user accessor
+  get user(): User | null {
+    return this.userSignal();
+  }
+  
+  // Get user as an Observable
+  getUser(): Observable<User | null> {
+    return this.user$;
+  }
+  
   login(): void {
     this.auth0.loginWithRedirect();
   }
-
-  // Log out
+  
   logout(): void {
-    this.auth0.logout({ 
+    this.auth0.logout({
       logoutParams: {
         returnTo: window.location.origin
       }
     });
   }
-
-  // Get the authenticated user from our API
-  getUser(): Observable<User | null> {
-    // If we already have the user, return it
-    if (this.user) {
-      return of(this.user);
-    }
-
-    // Otherwise, get it from API
-    return this.auth0.user$.pipe(
-      concatMap(auth0User => {
-        if (!auth0User) {
-          return of(null);
-        }
-
-        // Try to get existing user from API
-        return this.http.get<User>(`${this.apiUrl}/profile`).pipe(
-          catchError(err => {
-            // If user doesn't exist in our database, create one
-            if (err.status === 404) {
-              const newUser: Partial<User> = {
-                firstName: auth0User.given_name || '',
-                lastName: auth0User.family_name || '',
-                email: auth0User.email || '',
-                auth0Id: auth0User.sub || '',
-                isActive: true,
-                skillLevel: 0,
-                preferSingles: false
-              };
-
-              return this.http.post<User>(this.apiUrl, newUser);
-            }
-            return throwError(() => err);
-          }),
-          tap(user => this.user = user)
-        );
-      })
-    );
-  }
-
-  // Check if user is authenticated
+  
   isAuthenticated(): Observable<boolean> {
     return this.auth0.isAuthenticated$;
   }
-
-  // Get Auth0 access token for API calls
+  
   getAccessToken(): Observable<string> {
     return this.auth0.getAccessTokenSilently();
+  }
+  
+  // Get user profile from our backend
+  getUserProfileFromBackend(): Observable<User> {
+    return this.http.get<User>(`${environment.apiUrl}/users/profile`);
+  }
+  
+  // Create user in our backend
+  createUserInBackend(userData: Partial<User>): Observable<User> {
+    return this.http.post<User>(`${environment.apiUrl}/users`, userData);
+  }
+  
+  // Check if user is a coordinator
+  isCoordinator(): Observable<boolean> {
+    return this.user$.pipe(
+      map(user => user?.role === UserRole.COORDINATOR)
+    );
+  }
+  
+  // Keep isAdmin for backward compatibility
+  isAdmin(): Observable<boolean> {
+    return this.isCoordinator();
   }
 }

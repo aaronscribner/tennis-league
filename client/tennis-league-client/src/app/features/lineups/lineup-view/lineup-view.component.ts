@@ -1,16 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, switchMap, map } from 'rxjs';
+import { Observable, switchMap } from 'rxjs';
 
-import { LineupService } from '../../../core/services/lineup.service';
-import { EventService } from '../../../core/services/event.service';
+import { LineupsService } from '../lineups.service';
+import { EventsService } from '../../events/events.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { MatchCardComponent } from '../match-card/match-card.component';
 
 import { Event } from '../../../core/models/event.model';
 import { Match } from '../../../core/models/match.model';
-import { User } from '../../../core/models/user.model';
+import { User, UserRole } from '../../../core/models/user.model';
 
 // Angular Material imports
 import { MatIconModule } from '@angular/material/icon';
@@ -23,8 +22,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
   styleUrls: ['./lineup-view.component.scss'],
   standalone: true,
   imports: [
-    CommonModule, 
-    MatchCardComponent, 
+    CommonModule,
     MatIconModule, 
     MatButtonModule, 
     MatProgressSpinnerModule
@@ -35,9 +33,8 @@ export class LineupViewComponent implements OnInit {
   matches$!: Observable<Match[]>;
   currentUser: User | null = null;
   eventId!: string;
-  isAdmin = false;
+  isCoordinator = false;
   
-  // Add missing properties from the template
   loadingLineup = true;
   loadingEvent = true;
   lineup: any = null;
@@ -46,22 +43,22 @@ export class LineupViewComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private lineupService: LineupService,
-    private eventService: EventService,
+    private lineupsService: LineupsService,
+    private eventsService: EventsService,
     private authService: AuthService
   ) {}
 
   ngOnInit(): void {
     this.authService.getUser().subscribe(user => {
       this.currentUser = user;
-      this.isAdmin = user?.roles?.includes('admin') || false;
+      this.isCoordinator = user?.role === UserRole.COORDINATOR || user?.roles?.includes('coordinator') || false;
     });
 
     this.route.paramMap.pipe(
       switchMap(params => {
         this.eventId = params.get('id') || '';
         this.loadEventData();
-        return this.lineupService.getMatches(this.eventId);
+        return this.lineupsService.getMatches(this.eventId);
       })
     ).subscribe(matches => {
       if (matches && matches.length > 0) {
@@ -75,7 +72,7 @@ export class LineupViewComponent implements OnInit {
 
   loadEventData(): void {
     this.loadingEvent = true;
-    this.event$ = this.eventService.getEvent(this.eventId);
+    this.event$ = this.eventsService.getEvent(this.eventId);
     this.event$.subscribe(event => {
       this.event = event;
       this.loadingEvent = false;
@@ -106,7 +103,7 @@ export class LineupViewComponent implements OnInit {
 
   regenerateLineup(): void {
     this.loadingLineup = true;
-    this.lineupService.generateLineup(this.eventId).subscribe(lineup => {
+    this.lineupsService.generateLineup(this.eventId).subscribe(lineup => {
       this.lineup = lineup;
       this.loadingLineup = false;
     });

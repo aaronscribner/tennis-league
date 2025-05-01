@@ -1,26 +1,29 @@
 <div class="event-list-container">
   <div class="header">
     <h1>Upcoming Tennis Events</h1>
-    <button *ngIf="isAdmin" mat-raised-button color="primary" (click)="createEvent()">
+    <button *ngIf="isCoordinator" mat-raised-button color="primary" (click)="createEvent()">
       <mat-icon>add</mat-icon>
       Create Event
     </button>
   </div>
 
+  <!-- Loading state -->
   <div *ngIf="loading" class="loading-container">
     <mat-spinner diameter="40"></mat-spinner>
     <p>Loading events...</p>
   </div>
 
+  <!-- Empty state -->
   <div *ngIf="!loading && events.length === 0" class="empty-state">
     <mat-icon>event_busy</mat-icon>
     <h3>No upcoming events</h3>
     <p>There are currently no scheduled tennis events.</p>
-    <button *ngIf="isAdmin" mat-raised-button color="primary" (click)="createEvent()">
+    <button *ngIf="isCoordinator" mat-raised-button color="primary" (click)="createEvent()">
       Create First Event
     </button>
   </div>
 
+  <!-- Events grid -->
   <div class="events-grid" *ngIf="!loading && events.length > 0">
     <mat-card *ngFor="let event of events" class="event-card" [class.cancelled]="event.isCancelled">
       <mat-card-header>
@@ -67,4 +70,16 @@
       </mat-card-actions>
     </mat-card>
   </div>
+  
+  <!-- Floating action button for creating events (visible only to coordinators) -->
+  <button 
+    *ngIf="isCoordinator" 
+    mat-fab 
+    color="accent" 
+    class="create-event-fab" 
+    (click)="createEvent()" 
+    aria-label="Create new event"
+    matTooltip="Create new event">
+    <mat-icon class="large-icon">add</mat-icon>
+  </button>
 </div>

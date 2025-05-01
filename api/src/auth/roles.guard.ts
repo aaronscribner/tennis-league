@@ -26,7 +26,21 @@ export class RolesGuard implements CanActivate {
       return false;
     }
     
-    // Find the user in the database to check their role
+    // First check if user has roles from Auth0 token
+    if (user.roles && Array.isArray(user.roles)) {
+      const auth0Roles = user.roles.map(role => role.toLowerCase());
+      
+      // Check if any required role is in the Auth0 roles
+      const hasRoleFromAuth0 = requiredRoles.some(role => 
+        auth0Roles.includes(role.toLowerCase())
+      );
+      
+      if (hasRoleFromAuth0) {
+        return true;
+      }
+    }
+    
+    // If no match in Auth0 roles, check the database
     const dbUser = await this.userModel.findOne({ auth0Id: user.userId }).exec();
     
     if (!dbUser) {

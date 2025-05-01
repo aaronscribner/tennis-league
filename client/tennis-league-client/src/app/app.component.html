@@ -9,7 +9,7 @@
       <a mat-list-item routerLink="/events/calendar" routerLinkActive="active">Calendar</a>
       <ng-container *ngIf="isAuthenticated$ | async">
         <a mat-list-item routerLink="/profile" routerLinkActive="active">My Profile</a>
-        <ng-container *ngIf="isAdmin$ | async">
+        <ng-container *ngIf="isCoordinator$ | async">
           <a mat-list-item routerLink="/users" routerLinkActive="active">Users Management</a>
         </ng-container>
       </ng-container>

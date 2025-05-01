@@ -1,80 +1,133 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, Req, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User, UserRole } from '../models/user.schema';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 
+@ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
+  @ApiOperation({ summary: 'Get all users' })
+  @ApiResponse({ status: 200, description: 'Return all users' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.COORDINATOR)
+  @Get()
   findAll() {
     return this.usersService.findAll();
   }
 
-  @Get('profile')
-  @UseGuards(JwtAuthGuard)
-  async findProfile(@Req() request) {
-    const user = await this.usersService.findByAuth0Id(request.user.userId);
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-    return user;
-  }
-
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return the user' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COORDINATOR)
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.usersService.findById(id);
   }
 
-  @Post()
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Return the user profile' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
-  async create(@Req() request, @Body() createUserDto: Partial<User>) {
-    // Check if user already exists in our database
-    const existingUser = await this.usersService.findByEmail(createUserDto.email);
-    if (existingUser) {
-      throw new HttpException('User with this email already exists', HttpStatus.CONFLICT);
+  @Get('profile')
+  async getProfile(@Request() req) {
+    const auth0Id = req.user.userId;
+    const user = await this.usersService.findByAuth0Id(auth0Id);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
     
-    // Add Auth0 ID from the authenticated token
-    createUserDto.auth0Id = request.user.userId;
+    return user;
+  }
+
+  @ApiOperation({ summary: 'Create a new user' })
+  @ApiBody({ 
+    description: 'User data',
+    type: User
+  })
+  @ApiResponse({ status: 201, description: 'User successfully created' })
+  @ApiResponse({ status: 409, description: 'User with this email already exists' })
+  @Post()
+  async create(@Body() createUserDto: Partial<User>) {
+    // Check if the email exists and is a string
+    if (createUserDto.email && typeof createUserDto.email === 'string') {
+      // Check if user with email already exists
+      const existingUser = await this.usersService.findByEmail(createUserDto.email);
+      
+      if (existingUser) {
+        throw new ConflictException('User with this email already exists');
+      }
+    }
     
     return this.usersService.create(createUserDto);
   }
 
-  @Put(':id')
-  @UseGuards(JwtAuthGuard)
-  async update(@Req() request, @Param('id') id: string, @Body() updateUserDto: Partial<User>) {
-    // Check if the user is updating their own profile or is an admin
-    const user = await this.usersService.findById(id);
-    if (!user) {
-      throw new HttpException('User not found', HttpStatus.NOT_FOUND);
-    }
-    
-    const currentUser = await this.usersService.findByAuth0Id(request.user.userId);
-    if (user.auth0Id !== request.user.userId && currentUser.role !== UserRole.ADMIN) {
-      throw new HttpException('Forbidden', HttpStatus.FORBIDDEN);
-    }
-    
+  @ApiOperation({ summary: 'Update a user' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiBody({ 
+    description: 'User data to update',
+    type: User
+  })
+  @ApiResponse({ status: 200, description: 'User successfully updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COORDINATOR)
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: Partial<User>) {
     return this.usersService.update(id, updateUserDto);
   }
 
-  @Put(':id/role')
+  @ApiOperation({ summary: 'Delete a user' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'User successfully deleted' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  updateRole(@Param('id') id: string, @Body('role') role: UserRole) {
-    return this.usersService.setRole(id, role);
-  }
-
+  @Roles(UserRole.COORDINATOR)
   @Delete(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
+  }
+
+  @ApiOperation({ summary: 'Update user role' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiBody({ 
+    description: 'New role',
+    schema: {
+      type: 'object',
+      properties: {
+        role: { 
+          type: 'string', 
+          enum: [UserRole.PLAYER, UserRole.COORDINATOR],
+          example: UserRole.COORDINATOR
+        }
+      },
+      required: ['role']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'User role successfully updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COORDINATOR)
+  @Patch(':id/role')
+  setRole(@Param('id') id: string, @Body('role') role: string) {
+    return this.usersService.setRole(id, role as any);
   }
 }

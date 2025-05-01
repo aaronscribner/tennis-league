@@ -4,10 +4,10 @@ import { SharedModule } from '../../../shared/shared.module';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { LineupService } from '../../../core/services/lineup.service';
+import { LineupsService } from '../lineups.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { Match, Team } from '../../../core/models/match.model';
-import { User } from '../../../core/models/user.model';
+import { Match } from '../../../core/models/match.model';
+import { User, UserRole } from '../../../core/models/user.model';
 import { finalize } from 'rxjs';
 
 @Component({
@@ -21,7 +21,7 @@ export class ScoreFormComponent implements OnInit {
   matchId: string | null = null;
   match: Match | null = null;
   currentUser: User | null = null;
-  isAdmin = false;
+  isCoordinator = false;
   loading = true;
   submitting = false;
   scoreForm: FormGroup;
@@ -30,7 +30,7 @@ export class ScoreFormComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
-    private lineupService: LineupService,
+    private lineupsService: LineupsService,
     private authService: AuthService,
     private snackBar: MatSnackBar
   ) {
@@ -49,7 +49,7 @@ export class ScoreFormComponent implements OnInit {
     // Load current user
     this.authService.getUser().subscribe(user => {
       this.currentUser = user;
-      this.isAdmin = user?.role === 'admin';
+      this.isCoordinator = user?.role === UserRole.COORDINATOR;
     });
     
     // Load match data
@@ -68,7 +68,7 @@ export class ScoreFormComponent implements OnInit {
     if (!this.matchId) return;
     
     this.loading = true;
-    this.lineupService.getMatchById(this.matchId).subscribe({
+    this.lineupsService.getMatchById(this.matchId).subscribe({
       next: (match) => {
         this.match = match;
         this.populateForm();
@@ -102,11 +102,11 @@ export class ScoreFormComponent implements OnInit {
     this.submitting = true;
     const formData = this.scoreForm.value;
 
-    // Updated to match the LineupService.updateMatchScore method signature
-    this.lineupService.updateMatchScore(
+    this.lineupsService.updateMatchScore(
       this.matchId!, 
       formData.teamAScore, 
-      formData.teamBScore
+      formData.teamBScore,
+      formData.notes
     )
       .pipe(finalize(() => this.submitting = false))
       .subscribe({
@@ -152,7 +152,7 @@ export class ScoreFormComponent implements OnInit {
     if (!this.currentUser || !this.match) return false;
     
     // Admins can always submit scores
-    if (this.isAdmin) return true;
+    if (this.isCoordinator) return true;
     
     // Check if current user is part of the match
     return this.isUserInMatch();

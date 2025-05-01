@@ -25,7 +25,7 @@
 
     <ng-container *ngIf="lineup">
       <!-- Admin Actions -->
-      <div class="admin-actions" *ngIf="isAdmin">
+      <div class="admin-actions" *ngIf="isCoordinator">
         <button mat-stroked-button color="primary" (click)="regenerateLineup()">
           <mat-icon>refresh</mat-icon>
           Regenerate Lineup
@@ -69,12 +69,12 @@
           <div class="match-actions">
             <ng-container *ngIf="!match.isCompleted">
               <button mat-raised-button color="accent" 
-                      *ngIf="isCurrentUserInMatch(match) || isAdmin"
+                      *ngIf="isCurrentUserInMatch(match) || isCoordinator"
                       (click)="recordScore(match)">
                 <mat-icon>score</mat-icon>
                 Record Score
               </button>
-              <span *ngIf="!isCurrentUserInMatch(match) && !isAdmin">
+              <span *ngIf="!isCurrentUserInMatch(match) && !isCoordinator">
                 Waiting for score...
               </span>
             </ng-container>
@@ -93,7 +93,7 @@
       </div>
 
       <!-- Back Button for Non-Admins -->
-      <div class="back-button" *ngIf="!isAdmin">
+      <div class="back-button" *ngIf="!isCoordinator">
         <button mat-raised-button color="primary" (click)="backToEvent()">
           <mat-icon>arrow_back</mat-icon>
           Back to Event

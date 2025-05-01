@@ -10,8 +10,6 @@ import { ConfigService } from '../config/config.service';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         uri: await configService.getMongoConnectionString(),
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
       }),
     }),
   ],

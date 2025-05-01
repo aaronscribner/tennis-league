@@ -1,85 +1,110 @@
-import { Controller, Get, Post, Body, Param, Put, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { LineupsService } from './lineups.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { UserRole } from '../models/user.schema';
+import { Match } from '../models/match.model';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
 
+@ApiTags('lineups')
 @Controller('lineups')
 export class LineupsController {
   constructor(private readonly lineupsService: LineupsService) {}
 
+  @ApiOperation({ summary: 'Get lineup by event ID' })
+  @ApiParam({ name: 'eventId', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Return the lineup for the event' })
   @Get('event/:eventId')
-  async getEventLineup(@Param('eventId') eventId: string) {
+  async getLineupByEvent(@Param('eventId') eventId: string) {
     try {
-      const lineup = await this.lineupsService.findByEvent(eventId);
-      if (!lineup) {
-        return { message: 'No lineup found for this event', lineup: null };
-      }
+      const lineup = await this.lineupsService.getLineupByEvent(eventId);
       return lineup;
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+      // If no lineup exists, create one
+      return this.lineupsService.createLineup(eventId);
     }
   }
 
+  @ApiOperation({ summary: 'Create a new lineup for an event' })
+  @ApiParam({ name: 'eventId', description: 'Event ID' })
+  @ApiResponse({ status: 201, description: 'Lineup successfully created' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COORDINATOR)
   @Post('event/:eventId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
   async createLineup(@Param('eventId') eventId: string) {
-    try {
-      return await this.lineupsService.createLineup(eventId);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
+    return this.lineupsService.createLineup(eventId);
   }
 
-  @Put(':lineupId')
-  @UseGuards(JwtAuthGuard)
-  async updateLineup(
-    @Param('lineupId') lineupId: string,
-    @Body() updates: any[]
-  ) {
-    try {
-      return await this.lineupsService.updateLineup(lineupId, updates);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-  }
-
-  @Post(':lineupId/republish')
+  @ApiOperation({ summary: 'Generate a lineup for an event' })
+  @ApiParam({ name: 'eventId', description: 'Event ID' })
+  @ApiResponse({ status: 201, description: 'Lineup successfully generated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.COORDINATOR)
+  @Post('event/:eventId/generate')
+  async generateLineup(@Param('eventId') eventId: string) {
+    return this.lineupsService.generateLineup(eventId);
+  }
+
+  @ApiOperation({ summary: 'Republish a lineup' })
+  @ApiParam({ name: 'lineupId', description: 'Lineup ID' })
+  @ApiResponse({ status: 200, description: 'Lineup successfully republished' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Lineup not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COORDINATOR)
+  @Post(':lineupId/republish')
   async republishLineup(@Param('lineupId') lineupId: string) {
-    try {
-      return await this.lineupsService.republishLineup(lineupId);
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    return this.lineupsService.republishLineup(lineupId);
   }
 
+  @ApiOperation({ summary: 'Get match details' })
+  @ApiParam({ name: 'matchId', description: 'Match ID' })
+  @ApiResponse({ status: 200, description: 'Return the match details' })
+  @ApiResponse({ status: 404, description: 'Match not found' })
   @Get('match/:matchId')
-  async getMatch(@Param('matchId') matchId: string) {
-    try {
-      return await this.lineupsService.getMatchById(matchId);
-    } catch (error) {
-      throw new HttpException('Match not found', HttpStatus.NOT_FOUND);
-    }
+  async getMatch(@Param('matchId') matchId: string): Promise<Match> {
+    return await this.lineupsService.getMatch(matchId);
   }
 
-  @Put('match/:matchId/score')
+  @ApiOperation({ summary: 'Update match score' })
+  @ApiParam({ name: 'matchId', description: 'Match ID' })
+  @ApiBody({
+    description: 'Match score data',
+    schema: {
+      type: 'object',
+      properties: {
+        teamAScore: { type: 'number', example: 6 },
+        teamBScore: { type: 'number', example: 4 },
+        notes: { type: 'string', example: 'Great match!' }
+      },
+      required: ['teamAScore', 'teamBScore']
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Match score successfully updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Match not found' })
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
+  @Post('match/:matchId/score')
   async updateMatchScore(
     @Param('matchId') matchId: string,
-    @Body() scoreData: { teamAScore: number; teamBScore: number }
-  ) {
-    try {
-      return await this.lineupsService.updateMatchScore(
-        matchId, 
-        scoreData.teamAScore, 
-        scoreData.teamBScore
-      );
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    @Body('teamAScore') teamAScore: number,
+    @Body('teamBScore') teamBScore: number,
+    @Body('notes') notes?: string,
+  ): Promise<Match> {
+    return this.lineupsService.updateMatchScore(
+      matchId,
+      teamAScore,
+      teamBScore,
+      notes,
+    );
   }
 }

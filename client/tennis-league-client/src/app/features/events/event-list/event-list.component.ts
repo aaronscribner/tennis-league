@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Observable } from 'rxjs';
-import { EventService } from '../../../core/services/event.service';
+import { EventsService } from '../events.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { Event } from '../../../core/models/event.model';
 import { SharedModule } from '../../../shared/shared.module';
@@ -21,10 +21,10 @@ export class EventListComponent implements OnInit {
   loading = false;
   isAuthenticated$: Observable<boolean>;
   currentUser: User | null = null;
-  isAdmin = false;
+  isCoordinator = false;
 
   constructor(
-    private eventService: EventService,
+    private eventsService: EventsService,
     private authService: AuthService,
     private router: Router,
     private snackBar: MatSnackBar
@@ -39,7 +39,7 @@ export class EventListComponent implements OnInit {
 
   loadEvents(): void {
     this.loading = true;
-    this.eventService.getUpcomingEvents().subscribe({
+    this.eventsService.getUpcomingEvents().subscribe({
       next: (events) => {
         this.events = events;
         this.loading = false;
@@ -57,7 +57,7 @@ export class EventListComponent implements OnInit {
   loadCurrentUser(): void {
     this.authService.getUser().subscribe(user => {
       this.currentUser = user;
-      this.isAdmin = user?.role === UserRole.ADMIN;
+      this.isCoordinator = user?.role === UserRole.COORDINATOR;
     });
   }
 

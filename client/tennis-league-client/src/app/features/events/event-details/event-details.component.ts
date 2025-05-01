@@ -5,9 +5,9 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Observable } from 'rxjs';
 import { switchMap, tap } from 'rxjs/operators';
 
-import { EventService } from '../../../core/services/event.service';
+import { EventsService } from '../events.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { LineupService } from '../../../core/services/lineup.service';
+import { LineupsService } from '../../lineups/lineups.service';
 
 import { Event } from '../../../core/models/event.model';
 import { User, UserRole } from '../../../core/models/user.model';
@@ -36,7 +36,7 @@ export class EventDetailsComponent implements OnInit {
   generatingLineup = false;
   isAuthenticated$: Observable<boolean>;
   currentUser: User | null = null;
-  isAdmin = false;
+  isCoordinator = false;
   eventId: string | null = null;
   attendeesList: User[] = [];
 
@@ -44,9 +44,9 @@ export class EventDetailsComponent implements OnInit {
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
-    private eventService: EventService,
+    private eventsService: EventsService,
     private authService: AuthService,
-    private lineupService: LineupService,
+    private lineupsService: LineupsService,
     private snackBar: MatSnackBar
   ) {
     this.isAuthenticated$ = this.authService.isAuthenticated();
@@ -63,7 +63,7 @@ export class EventDetailsComponent implements OnInit {
         this.eventId = params.get('id');
         this.loading = true;
       }),
-      switchMap(params => this.eventService.getEvent(params.get('id') || ''))
+      switchMap(params => this.eventsService.getEvent(params.get('id') || ''))
     ).subscribe({
       next: (event) => {
         this.event = event;
@@ -85,7 +85,7 @@ export class EventDetailsComponent implements OnInit {
   loadCurrentUser(): void {
     this.authService.getUser().subscribe(user => {
       this.currentUser = user;
-      this.isAdmin = user?.role === UserRole.ADMIN;
+      this.isCoordinator = user?.role === UserRole.COORDINATOR;
       
       // Update RSVP form with user's preference
       if (user) {
@@ -100,7 +100,7 @@ export class EventDetailsComponent implements OnInit {
     if (!this.eventId) return;
     
     this.loadingRsvp = true;
-    this.eventService.getUserRsvp(this.eventId).subscribe({
+    this.eventsService.getUserRsvp(this.eventId).subscribe({
       next: (rsvp) => {
         this.rsvp = rsvp;
         if (rsvp) {
@@ -126,7 +126,7 @@ export class EventDetailsComponent implements OnInit {
     if (!this.eventId) return;
     
     this.loadingLineup = true;
-    this.lineupService.getEventLineup(this.eventId).subscribe({
+    this.lineupsService.getEventLineup(this.eventId).subscribe({
       next: (lineup) => {
         if (lineup && lineup._id) {
           this.lineup = lineup;
@@ -151,7 +151,7 @@ export class EventDetailsComponent implements OnInit {
     
     if (this.rsvp && this.rsvp._id) {
       // Update existing RSVP
-      this.eventService.updateRsvp(this.rsvp._id, rsvpData).subscribe({
+      this.eventsService.updateRsvp(this.rsvp._id, rsvpData).subscribe({
         next: (updatedRsvp) => {
           this.rsvp = updatedRsvp;
           this.snackBar.open('Your RSVP has been updated', 'Close', {
@@ -169,7 +169,7 @@ export class EventDetailsComponent implements OnInit {
       });
     } else {
       // Create new RSVP
-      this.eventService.createRsvp(this.eventId, rsvpData).subscribe({
+      this.eventsService.createRsvp(this.eventId, rsvpData).subscribe({
         next: (newRsvp) => {
           this.rsvp = newRsvp;
           this.snackBar.open('Your RSVP has been submitted', 'Close', {
@@ -192,7 +192,7 @@ export class EventDetailsComponent implements OnInit {
     if (!this.eventId) return;
     
     this.generatingLineup = true;
-    this.lineupService.createLineup(this.eventId).subscribe({
+    this.lineupsService.createLineup(this.eventId).subscribe({
       next: (lineup) => {
         this.lineup = lineup;
         this.snackBar.open('Match lineup generated successfully', 'Close', {
@@ -214,7 +214,7 @@ export class EventDetailsComponent implements OnInit {
     if (!this.lineup || !this.lineup._id) return;
     
     this.generatingLineup = true;
-    this.lineupService.republishLineup(this.lineup._id).subscribe({
+    this.lineupsService.republishLineup(this.lineup._id).subscribe({
       next: (lineup) => {
         this.lineup = lineup;
         this.snackBar.open('Match lineup regenerated successfully', 'Close', {
@@ -244,7 +244,7 @@ export class EventDetailsComponent implements OnInit {
     if (!this.eventId) return;
     
     if (confirm('Are you sure you want to cancel this event? This cannot be undone.')) {
-      this.eventService.cancelEvent(this.eventId).subscribe({
+      this.eventsService.cancelEvent(this.eventId).subscribe({
         next: () => {
           this.snackBar.open('Event cancelled successfully', 'Close', {
             duration: 3000

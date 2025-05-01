@@ -1,4 +1,16 @@
 <div class="callback-container">
-  <mat-spinner></mat-spinner>
-  <h2>Completing login, please wait...</h2>
+  @if (loading && !error) {
+    <div class="loading">
+      <mat-spinner diameter="50"></mat-spinner>
+      <h2>Processing your authentication...</h2>
+    </div>
+  }
+  @if (error) {
+    <div class="error">
+      <mat-icon color="warn">error</mat-icon>
+      <h2>Authentication Error</h2>
+      <p>There was a problem processing your login. Please try again.</p>
+      <button mat-raised-button color="primary" routerLink="/login">Return to Login</button>
+    </div>
+  }
 </div>

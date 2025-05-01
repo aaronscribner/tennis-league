@@ -5,21 +5,20 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { Observable } from 'rxjs';
 import { map, shareReplay } from 'rxjs/operators';
 import { SharedModule } from './shared/shared.module';
-import { CoreModule } from './core/core.module';
 import { AuthService } from './core/services/auth.service';
 import { UserRole } from './core/models/user.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SharedModule, CoreModule],
+  imports: [CommonModule, RouterOutlet, SharedModule],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit {
   title = 'Tennis League';
   isAuthenticated$: Observable<boolean>;
-  isAdmin$: Observable<boolean>;
+  isCoordinator$: Observable<boolean>;
   isHandset$: Observable<boolean>;
 
   constructor(
@@ -33,8 +32,8 @@ export class AppComponent implements OnInit {
       );
       
     this.isAuthenticated$ = this.authService.isAuthenticated();
-    this.isAdmin$ = this.authService.getUser().pipe(
-      map(user => user?.role === UserRole.ADMIN)
+    this.isCoordinator$ = this.authService.getUser().pipe(
+      map(user => user?.role === UserRole.COORDINATOR)
     );
   }
 

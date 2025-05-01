@@ -115,11 +115,17 @@ export class EventsService {
     });
     
     if (existingRsvp) {
-      return this.rsvpModel.findByIdAndUpdate(
+      const updatedRsvp = await this.rsvpModel.findByIdAndUpdate(
         existingRsvp._id, 
         rsvpData, 
         { new: true }
       ).exec();
+      
+      if (!updatedRsvp) {
+        throw new NotFoundException(`RSVP with ID ${existingRsvp._id} not found after update`);
+      }
+      
+      return updatedRsvp;
     }
     
     const newRsvp = new this.rsvpModel(rsvpData);

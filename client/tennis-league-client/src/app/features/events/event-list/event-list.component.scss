@@ -2,6 +2,7 @@
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  position: relative;  /* Added to position the FAB relative to this container */
 }
 
 .header {
@@ -134,5 +135,28 @@
     button {
       margin-top: 15px;
     }
+  }
+}
+
+/* Floating action button styles */
+.create-event-fab {
+  position: fixed;
+  right: 30px;
+  bottom: 30px;
+  z-index: 999;
+  width: 64px;
+  height: 64px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, box-shadow 0.2s;
+  
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+  
+  .large-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
   }
 }

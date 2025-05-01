@@ -5,18 +5,20 @@ export const environment = {
     domain: 'dev-ik81nhdv5j46bwjt.us.auth0.com',
     clientId: 'gZo9AwUnNoOBE2eQ8AdZytbR1zSIk41B',
     authorizationParams: {
-      audience: 'xonOvNC3hTdvxDTzrFNo-Kpv-PXob2cOk_4qEEGuvUfB8nKGyGj2VAtI1vThaLpn',
       redirect_uri: window.location.origin + '/callback',
-      scope: 'openid profile email'
+      audience: 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/',
+      scope: 'openid profile email offline_access'
     },
-    errorPath: '/callback',
+    cacheLocation: 'localstorage' as const,
+    useRefreshTokens: true,
+    useRefreshTokensFallback: true,
     httpInterceptor: {
       allowedList: [
         {
           uri: 'https://your-api-url.fly.dev/*',
           tokenOptions: {
             authorizationParams: {
-              audience: 'xonOvNC3hTdvxDTzrFNo-Kpv-PXob2cOk_4qEEGuvUfB8nKGyGj2VAtI1vThaLpn'
+              audience: 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/'
             }
           }
         }

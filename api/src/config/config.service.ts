@@ -19,11 +19,11 @@ export class ConfigService {
 
   // Default values for local development
   private defaults = {
-    'mongodb-connection-string': 'mongodb://localhost:27017/tennis-league',
+    'mongodb-connection-string': 'mongodb+srv://tennisleague:ERm559sAusIWQIeD@cluster0.evwk5bc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     'auth0-domain': 'dev-ik81nhdv5j46bwjt.us.auth0.com',
-    'auth0-audience': 'xonOvNC3hTdvxDTzrFNo-Kpv-PXob2cOk_4qEEGuvUfB8nKGyGj2VAtI1vThaLpn',
+    'auth0-audience': 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/',
     'auth0-client-id': 'gZo9AwUnNoOBE2eQ8AdZytbR1zSIk41B',
-    'auth0-client-secret': 'your-auth0-client-secret', // Note: Client secret isn't exposed in the client app
+    'auth0-client-secret': 'xonOvNC3hTdvxDTzrFNo-Kpv-PXob2cOk_4qEEGuvUfB8nKGyGj2VAtI1vThaLpn', // Note: Client secret isn't exposed in the client app
   };
 
   async getSecret(secretName: string): Promise<string> {
