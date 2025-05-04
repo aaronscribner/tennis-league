@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SharedModule } from '../../../shared/shared.module';
 import { Match } from '../../../core/models/match.model';
@@ -25,11 +25,15 @@ export class MatchCardComponent implements OnInit {
   teamAPlayersList: Array<string | User> = [];
   teamBPlayersList: Array<string | User> = [];
 
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {
+    // Set up an effect to react to changes in the currentUser signal
+    effect(() => {
+      this.currentUser = this.authService.currentUser();
+      this.checkIfUserMatch();
+    });
+  }
 
   ngOnInit(): void {
-    this.loadCurrentUser();
-    
     // Ensure match has necessary properties for the template
     if (this.match && !this.match.hasOwnProperty('startTime')) {
       this.match.startTime = undefined;
@@ -47,13 +51,6 @@ export class MatchCardComponent implements OnInit {
     if (this.match?.teamB?.players) {
       this.teamBPlayersList = [...this.match.teamB.players];
     }
-  }
-
-  loadCurrentUser(): void {
-    this.authService.getUser().subscribe(user => {
-      this.currentUser = user;
-      this.checkIfUserMatch();
-    });
   }
 
   checkIfUserMatch(): void {

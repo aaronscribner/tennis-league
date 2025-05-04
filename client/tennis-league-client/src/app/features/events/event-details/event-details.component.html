@@ -21,10 +21,10 @@
         <h3>{{ event.date | date: 'EEEE, MMMM d, y, h:mm a' }}</h3>
       </div>
       <div class="event-actions">
-        <button *ngIf="isCoordinator && !event.isCancelled" mat-stroked-button color="primary" (click)="editEvent()">
+        <button *ngIf="isCoordinator() && !event.isCancelled" mat-stroked-button color="primary" (click)="editEvent()">
           <mat-icon>edit</mat-icon> Edit
         </button>
-        <button *ngIf="isCoordinator && !event.isCancelled" mat-stroked-button color="warn" (click)="cancelEvent()">
+        <button *ngIf="isCoordinator() && !event.isCancelled" mat-stroked-button color="warn" (click)="cancelEvent()">
           <mat-icon>cancel</mat-icon> Cancel Event
         </button>
       </div>
@@ -40,20 +40,48 @@
           </p>
           <p class="event-type">
             <mat-icon>sports_tennis</mat-icon>
-            <span>{{ event.eventType | titlecase }} Tennis</span>
-          </p>
-          <p class="capacity">
-            <mat-icon>people</mat-icon>
             <span>
-              {{ event.attendees ? event.attendees.length : 0 }} / {{ event.maxPlayers }} players
-              <span *ngIf="!isEventFull() && !event.isCancelled" class="available">
-                ({{ event.maxPlayers - (event.attendees ? event.attendees.length : 0) }} spots available)
-              </span>
-              <span *ngIf="isEventFull()" class="full">
-                (Event is full)
-              </span>
+              <span *ngIf="event.isSinglesAllowed">Singles</span>
+              <span *ngIf="event.isSinglesAllowed && event.isDoublesAllowed"> & </span>
+              <span *ngIf="event.isDoublesAllowed">Doubles</span>
+              Tennis
             </span>
           </p>
+          
+          <!-- Capacity information with separate singles and doubles -->
+          <div class="capacity-container">
+            <ng-container *ngIf="event.isSinglesAllowed">
+              <p class="capacity singles">
+                <mat-icon>person</mat-icon>
+                <span>
+                  <strong>Singles:</strong>
+                  {{ calculateRemainingSpots().totalAttendees }} / {{ event.maxSinglesPlayers }} players
+                  <span *ngIf="calculateRemainingSpots().singles > 0 && !event.isCancelled" class="available">
+                    ({{ calculateRemainingSpots().singles }} spots available)
+                  </span>
+                  <span *ngIf="calculateRemainingSpots().singles === 0" class="full">
+                    (Full)
+                  </span>
+                </span>
+              </p>
+            </ng-container>
+            
+            <ng-container *ngIf="event.isDoublesAllowed">
+              <p class="capacity doubles">
+                <mat-icon>groups</mat-icon>
+                <span>
+                  <strong>Doubles:</strong>
+                  {{ calculateRemainingSpots().totalAttendees }} / {{ event.maxDoublesPlayers }} players
+                  <span *ngIf="calculateRemainingSpots().doubles > 0 && !event.isCancelled" class="available">
+                    ({{ calculateRemainingSpots().doubles }} spots available)
+                  </span>
+                  <span *ngIf="calculateRemainingSpots().doubles === 0" class="full">
+                    (Full)
+                  </span>
+                </span>
+              </p>
+            </ng-container>
+          </div>
           <p *ngIf="event.description" class="description">
             {{ event.description }}
           </p>
@@ -74,28 +102,24 @@
 
         <form [formGroup]="rsvpForm" (ngSubmit)="submitRsvp()" *ngIf="!loadingRsvp">
           <div class="rsvp-options">
-            <mat-radio-group formControlName="isAttending" class="rsvp-radio-group">
-              <mat-radio-button [value]="true" [disabled]="isEventFull() && (!rsvp || !rsvp.isAttending)">
-                I'll attend
+            <mat-radio-group formControlName="rsvpStatus" class="rsvp-radio-group">
+              <mat-radio-button value="singles" [disabled]="isEventFull() && (!rsvp || !rsvp.isAttending)">
+                Going - Singles only
               </mat-radio-button>
-              <mat-radio-button [value]="false">
-                I can't attend
+              <mat-radio-button value="doubles" [disabled]="isEventFull() && (!rsvp || !rsvp.isAttending)">
+                Going - Doubles only
+              </mat-radio-button>
+              <mat-radio-button value="preferSingles" [disabled]="isEventFull() && (!rsvp || !rsvp.isAttending)">
+                Going - Prefer singles
+              </mat-radio-button>
+              <mat-radio-button value="preferDoubles" [disabled]="isEventFull() && (!rsvp || !rsvp.isAttending)">
+                Going - Prefer doubles
+              </mat-radio-button>
+              <mat-radio-button value="notGoing">
+                Not Going
               </mat-radio-button>
             </mat-radio-group>
-
-            <mat-form-field appearance="outline" *ngIf="rsvpForm.get('isAttending')?.value">
-              <mat-label>Preference</mat-label>
-              <mat-select formControlName="preferSingles">
-                <mat-option [value]="true">I prefer singles matches</mat-option>
-                <mat-option [value]="false">I prefer doubles matches</mat-option>
-              </mat-select>
-            </mat-form-field>
           </div>
-
-          <mat-form-field appearance="outline" class="full-width" *ngIf="rsvpForm.get('isAttending')?.value">
-            <mat-label>Additional Notes</mat-label>
-            <textarea matInput formControlName="notes" rows="3" placeholder="Any additional information (optional)"></textarea>
-          </mat-form-field>
 
           <div class="button-container">
             <button mat-raised-button color="primary" type="submit" [disabled]="submittingRsvp || (isEventFull() && (!rsvp || !rsvp.isAttending))">
@@ -120,8 +144,8 @@
         </div>
 
         <div *ngIf="!loadingLineup && !lineup" class="no-lineup">
-          <p *ngIf="!isCoordinator">No match lineup has been generated yet.</p>
-          <div *ngIf="isCoordinator && !event.isCancelled" class="generate-lineup">
+          <p *ngIf="!isCoordinator()">No match lineup has been generated yet.</p>
+          <div *ngIf="isCoordinator() && !event.isCancelled" class="generate-lineup">
             <p>Generate a match lineup for this event:</p>
             <button mat-raised-button color="primary" (click)="generateLineup()" [disabled]="generatingLineup">
               <mat-icon>shuffle</mat-icon> Generate Lineup
@@ -139,7 +163,7 @@
               <mat-icon>visibility</mat-icon> View Lineup
             </button>
             
-            <button *ngIf="isCoordinator && !event.isCancelled" mat-stroked-button color="accent" (click)="regenerateLineup()" [disabled]="generatingLineup">
+            <button *ngIf="isCoordinator() && !event.isCancelled" mat-stroked-button color="accent" (click)="regenerateLineup()" [disabled]="generatingLineup">
               <mat-icon>refresh</mat-icon> Regenerate
               <mat-progress-spinner *ngIf="generatingLineup" mode="indeterminate" diameter="20" class="inline-spinner">
               </mat-progress-spinner>

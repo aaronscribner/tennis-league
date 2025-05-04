@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
@@ -18,11 +18,15 @@ import { UserRole } from './core/models/user.model';
 export class AppComponent implements OnInit {
   title = 'Tennis League';
   isAuthenticated$: Observable<boolean>;
-  isCoordinator$: Observable<boolean>;
   isHandset$: Observable<boolean>;
+  
+  // Add computed signal for coordinator check
+  isCoordinator = computed(() => 
+    this.authService.currentUser()?.role === UserRole.COORDINATOR
+  );
 
   constructor(
-    private authService: AuthService,
+    public authService: AuthService,
     private breakpointObserver: BreakpointObserver
   ) {
     this.isHandset$ = this.breakpointObserver.observe(Breakpoints.Handset)
@@ -32,14 +36,10 @@ export class AppComponent implements OnInit {
       );
       
     this.isAuthenticated$ = this.authService.isAuthenticated();
-    this.isCoordinator$ = this.authService.getUser().pipe(
-      map(user => user?.role === UserRole.COORDINATOR)
-    );
   }
 
   ngOnInit() {
-    // Preload user data if authenticated
-    this.authService.getUser().subscribe();
+    // No need to subscribe here as the signal is already initialized in the auth service
   }
 
   login() {

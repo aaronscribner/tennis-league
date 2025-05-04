@@ -1,0 +1,94 @@
+<div class="match-card" [class.completed]="match.isCompleted">
+  <div class="match-header">
+    <div class="match-number">Match {{match.matchNumber}}</div>
+    <div class="match-time">{{match.scheduledTime | date:'shortTime'}}</div>
+  </div>
+  
+  <!-- Combinations tabs -->
+  <div class="combinations-tabs">
+    <button *ngFor="let combination of match.combinations; let i = index" 
+            [class.active]="selectedCombinationIndex === i"
+            [class.winning]="isWinningCombination(combination)"
+            (click)="selectCombination(combination, i)"
+            class="combination-tab">
+      {{ getCombinationLabel(i) }}
+    </button>
+  </div>
+  
+  <ng-container *ngIf="selectedCombination">
+    <div class="team-section">
+      <div class="team" [class.winner]="match.isCompleted && selectedCombination.teamASetsWon > selectedCombination.teamBSetsWon">
+        <div class="team-label">Team A</div>
+        <div class="team-players">
+          <div class="player" *ngFor="let player of selectedCombination.teamA">
+            <span class="player-name">{{getPlayerName(player)}}</span>
+            <small class="player-level">{{getPlayerSkillLevel(player)}}</small>
+          </div>
+        </div>
+        <div *ngIf="selectedCombination.isCompleted" class="team-sets">{{selectedCombination.teamASetsWon || 0}}</div>
+      </div>
+      
+      <div class="vs-badge">VS</div>
+      
+      <div class="team" [class.winner]="match.isCompleted && selectedCombination.teamBSetsWon > selectedCombination.teamASetsWon">
+        <div class="team-label">Team B</div>
+        <div class="team-players">
+          <div class="player" *ngFor="let player of selectedCombination.teamB">
+            <span class="player-name">{{getPlayerName(player)}}</span>
+            <small class="player-level">{{getPlayerSkillLevel(player)}}</small>
+          </div>
+        </div>
+        <div *ngIf="selectedCombination.isCompleted" class="team-sets">{{selectedCombination.teamBSetsWon || 0}}</div>
+      </div>
+    </div>
+    
+    <div *ngIf="selectedCombination.isCompleted && selectedCombination.sets?.length" class="match-sets">
+      <div class="sets-table">
+        <div class="set-row header">
+          <div class="set-cell">Set</div>
+          <div class="set-cell">Team A</div>
+          <div class="set-cell">Team B</div>
+        </div>
+        
+        <ng-container *ngFor="let set of selectedCombination.sets; let i = index">
+          <div class="set-row" *ngIf="set.isCompleted">
+            <div class="set-cell">{{i + 1}}</div>
+            <div class="set-cell">{{set.teamAGames}}</div>
+            <div class="set-cell">{{set.teamBGames}}</div>
+          </div>
+          
+          <div *ngIf="set.isTiebreak && set.tiebreakScore" class="set-tiebreak">
+            Tiebreak: {{set.tiebreakScore}}
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </ng-container>
+  
+  <div class="match-actions">
+    <ng-container *ngIf="!match.isCompleted">
+      <ng-container *ngIf="isPlayerInMatch() || isCoordinator">
+        <button mat-raised-button color="primary" (click)="recordScore()">
+          <mat-icon>score</mat-icon>
+          Record Score
+        </button>
+      </ng-container>
+      
+      <ng-container *ngIf="!isPlayerInMatch() && !isCoordinator">
+        <span class="waiting">Waiting for players to record score</span>
+      </ng-container>
+    </ng-container>
+    
+    <ng-container *ngIf="match.isCompleted">
+      <div class="match-result">
+        <span class="completed-label">
+          <mat-icon>check_circle</mat-icon> Score Complete
+        </span>
+      </div>
+    </ng-container>
+  </div>
+  
+  <div *ngIf="match.notes" class="match-notes">
+    <strong>Notes:</strong> {{match.notes}}
+  </div>
+</div>

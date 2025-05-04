@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '../../../shared/shared.module';
 import { EventService } from '../../../core/services/event.service';
-import { Event, EventType } from '../../../core/models/event.model';
+import { Event } from '../../../core/models/event.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
@@ -19,7 +19,6 @@ export class EventFormComponent implements OnInit {
   isEditMode = false;
   eventId: string | null = null;
   loading = false;
-  eventTypes = Object.values(EventType);
   
   // For time selection
   timeSlots: string[] = [];
@@ -57,6 +56,38 @@ export class EventFormComponent implements OnInit {
     }
   }
 
+  private validateSinglesCount(control: AbstractControl): ValidationErrors | null {
+    const value = control.value;
+    
+    // Allow 0 (to disable singles matches)
+    if (value === 0) {
+      return null;
+    }
+    
+    // Check if it's a multiple of 2
+    if (value % 2 !== 0) {
+      return { invalidSinglesCount: true };
+    }
+    
+    return null;
+  }
+  
+  private validateDoublesCount(control: AbstractControl): ValidationErrors | null {
+    const value = control.value;
+    
+    // Allow 0 (to disable doubles matches)
+    if (value === 0) {
+      return null;
+    }
+    
+    // Check if it's a multiple of 4
+    if (value % 4 !== 0) {
+      return { invalidDoublesCount: true };
+    }
+    
+    return null;
+  }
+
   private createForm(): FormGroup {
     return this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(100)]],
@@ -64,10 +95,11 @@ export class EventFormComponent implements OnInit {
       date: [new Date(), [Validators.required]],
       startTime: ['', [Validators.required]],
       endTime: ['', [Validators.required]],
-      repeatWeekly: [false],
       description: [''],
-      maxPlayers: [12, [Validators.required, Validators.min(2), Validators.max(24)]],
-      eventType: [EventType.SINGLES, [Validators.required]],
+      maxSinglesPlayers: [8, [Validators.required, Validators.min(0), this.validateSinglesCount.bind(this)]],
+      maxDoublesPlayers: [8, [Validators.required, Validators.min(0), this.validateDoublesCount.bind(this)]],
+      isSinglesAllowed: [true],
+      isDoublesAllowed: [true]
     });
   }
 
@@ -108,9 +140,10 @@ export class EventFormComponent implements OnInit {
       startTime: startTime,
       endTime: endTime,
       description: event.description || '',
-      maxPlayers: event.maxPlayers,
-      eventType: event.eventType,
-      repeatWeekly: false // Since this is not in the current model, defaulting to false
+      maxSinglesPlayers: event.maxSinglesPlayers || 8,
+      maxDoublesPlayers: event.maxDoublesPlayers || 8,
+      isSinglesAllowed: event.isSinglesAllowed !== undefined ? event.isSinglesAllowed : true,
+      isDoublesAllowed: event.isDoublesAllowed !== undefined ? event.isDoublesAllowed : true
     });
   }
 
@@ -138,13 +171,19 @@ export class EventFormComponent implements OnInit {
     
     date.setHours(hours24, startMinutes);
     
+    // Update singles/doubles allowed based on player counts
+    const maxSinglesPlayers = formValue.maxSinglesPlayers;
+    const maxDoublesPlayers = formValue.maxDoublesPlayers;
+    
     const eventData: Partial<Event> = {
       title: formValue.title,
       location: formValue.location,
       date: date,
       description: formValue.description,
-      maxPlayers: formValue.maxPlayers,
-      eventType: formValue.eventType,
+      maxSinglesPlayers: maxSinglesPlayers,
+      maxDoublesPlayers: maxDoublesPlayers,
+      isSinglesAllowed: maxSinglesPlayers >= 2,
+      isDoublesAllowed: maxDoublesPlayers >= 4,
       isCancelled: false
     };
 
@@ -167,21 +206,6 @@ export class EventFormComponent implements OnInit {
           this.snackBar.open('Event created successfully', 'Close', { duration: 3000 });
           this.router.navigate(['/events']);
           this.loading = false;
-          
-          // If repeatWeekly is true, create additional events
-          if (formValue.repeatWeekly) {
-            for (let i = 1; i <= 8; i++) {
-              const repeatDate = new Date(date);
-              repeatDate.setDate(date.getDate() + (i * 7));
-              
-              const repeatEventData = {
-                ...eventData,
-                date: repeatDate
-              };
-              
-              this.eventService.createEvent(repeatEventData).subscribe();
-            }
-          }
         },
         error: (error) => {
           console.error('Error creating event:', error);

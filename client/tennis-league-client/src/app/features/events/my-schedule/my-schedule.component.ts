@@ -8,13 +8,13 @@ import { SharedModule } from '../../../shared/shared.module';
 import { Router } from '@angular/router';
 
 @Component({
-  selector: 'app-calendar',
+  selector: 'app-my-schedule',
   standalone: true,
   imports: [CommonModule, SharedModule, MatCardModule, MatButtonModule],
-  templateUrl: './calendar.component.html',
-  styleUrl: './calendar.component.scss'
+  templateUrl: './my-schedule.component.html',
+  styleUrl: './my-schedule.component.scss'
 })
-export class CalendarComponent implements OnInit {
+export class MyScheduleComponent implements OnInit {
   events: any[] = [];
   
   constructor(

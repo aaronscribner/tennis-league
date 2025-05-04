@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -35,25 +35,26 @@ export class EventDetailsComponent implements OnInit {
   submittingRsvp = false;
   generatingLineup = false;
   isAuthenticated$: Observable<boolean>;
-  currentUser: User | null = null;
-  isCoordinator = false;
   eventId: string | null = null;
   attendeesList: User[] = [];
+  
+  // Use computed signal for coordinator check
+  isCoordinator = computed(() => 
+    this.authService.currentUser()?.role === UserRole.COORDINATOR
+  );
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private fb: FormBuilder,
     private eventsService: EventsService,
-    private authService: AuthService,
+    public authService: AuthService,
     private lineupsService: LineupsService,
     private snackBar: MatSnackBar
   ) {
     this.isAuthenticated$ = this.authService.isAuthenticated();
     this.rsvpForm = this.fb.group({
-      isAttending: [true, Validators.required],
-      preferSingles: [false],
-      notes: ['']
+      rsvpStatus: ['notGoing', Validators.required]
     });
   }
 
@@ -68,7 +69,6 @@ export class EventDetailsComponent implements OnInit {
       next: (event) => {
         this.event = event;
         this.loading = false;
-        this.loadCurrentUser();
         this.loadRsvp();
         this.loadLineup();
       },
@@ -82,20 +82,6 @@ export class EventDetailsComponent implements OnInit {
     });
   }
 
-  loadCurrentUser(): void {
-    this.authService.getUser().subscribe(user => {
-      this.currentUser = user;
-      this.isCoordinator = user?.role === UserRole.COORDINATOR;
-      
-      // Update RSVP form with user's preference
-      if (user) {
-        this.rsvpForm.patchValue({
-          preferSingles: user.preferSingles
-        });
-      }
-    });
-  }
-
   loadRsvp(): void {
     if (!this.eventId) return;
     
@@ -104,11 +90,16 @@ export class EventDetailsComponent implements OnInit {
       next: (rsvp) => {
         this.rsvp = rsvp;
         if (rsvp) {
-          this.rsvpForm.patchValue({
-            isAttending: rsvp.isAttending,
-            preferSingles: rsvp.preferSingles,
-            notes: rsvp.notes
-          });
+          // Map existing RSVP data to new format
+          let rsvpStatus = 'notGoing';
+          if (rsvp.isAttending) {
+            if (rsvp.preferSingles === true) {
+              rsvpStatus = 'preferSingles';
+            } else if (rsvp.preferSingles === false) {
+              rsvpStatus = 'preferDoubles';
+            }
+          }
+          this.rsvpForm.patchValue({ rsvpStatus });
         }
         this.loadingRsvp = false;
       },
@@ -144,10 +135,18 @@ export class EventDetailsComponent implements OnInit {
   }
 
   submitRsvp(): void {
-    if (!this.eventId || !this.currentUser || this.rsvpForm.invalid) return;
+    if (!this.eventId || !this.authService.currentUser() || this.rsvpForm.invalid) return;
     
     this.submittingRsvp = true;
-    const rsvpData = this.rsvpForm.value;
+    const rsvpStatus = this.rsvpForm.value.rsvpStatus;
+    
+    // Convert new format to the format expected by the API
+    const rsvpData = {
+      isAttending: rsvpStatus !== 'notGoing',
+      preferSingles: rsvpStatus === 'singles' || rsvpStatus === 'preferSingles',
+      playingSinglesOnly: rsvpStatus === 'singles',
+      playingDoublesOnly: rsvpStatus === 'doubles'
+    };
     
     if (this.rsvp && this.rsvp._id) {
       // Update existing RSVP
@@ -263,6 +262,41 @@ export class EventDetailsComponent implements OnInit {
 
   isEventFull(): boolean {
     if (!this.event) return false;
-    return this.event.attendees ? this.event.attendees.length >= this.event.maxPlayers : false;
+    
+    const attendeesCount = this.event.attendees ? this.event.attendees.length : 0;
+    
+    // If either singles or doubles still has spots, the event is not full
+    if (this.event.isSinglesAllowed && attendeesCount < this.event.maxSinglesPlayers) {
+      return false;
+    }
+    
+    if (this.event.isDoublesAllowed && attendeesCount < this.event.maxDoublesPlayers) {
+      return false;
+    }
+    
+    // If we got here, either the event doesn't allow singles/doubles or all spots are taken
+    return true;
+  }
+  
+  calculateRemainingSpots(): { singles: number, doubles: number, totalAttendees: number } {
+    if (!this.event) {
+      return { singles: 0, doubles: 0, totalAttendees: 0 };
+    }
+    
+    const attendeesCount = this.event.attendees ? this.event.attendees.length : 0;
+    
+    // Default to 0 if properties don't exist
+    const maxSinglesPlayers = this.event.maxSinglesPlayers || 0;
+    const maxDoublesPlayers = this.event.maxDoublesPlayers || 0;
+    
+    // Calculate remaining spots for singles and doubles
+    const remainingSinglesSpots = Math.max(0, maxSinglesPlayers - attendeesCount);
+    const remainingDoublesSpots = Math.max(0, maxDoublesPlayers - attendeesCount);
+    
+    return {
+      singles: remainingSinglesSpots,
+      doubles: remainingDoublesSpots,
+      totalAttendees: attendeesCount
+    };
   }
 }

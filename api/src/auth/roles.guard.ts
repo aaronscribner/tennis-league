@@ -47,6 +47,17 @@ export class RolesGuard implements CanActivate {
       return false;
     }
     
-    return requiredRoles.includes(dbUser.role);
+    // Check primary role
+    if (requiredRoles.includes(dbUser.role)) {
+      return true;
+    }
+    
+    // Check roles array in database
+    if (dbUser.roles && Array.isArray(dbUser.roles) && dbUser.roles.length > 0) {
+      const userRoles = dbUser.roles.map(role => role.toLowerCase());
+      return requiredRoles.some(role => userRoles.includes(role.toLowerCase()));
+    }
+    
+    return false;
   }
 }

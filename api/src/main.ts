@@ -5,8 +5,18 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Enable CORS for frontend development
-  app.enableCors();
+  // Enhanced CORS configuration
+  app.enableCors({
+    origin: [
+      'http://localhost:4200',  // Angular dev server
+      'http://localhost:3000',  // Local development
+      'https://tennis-league.vercel.app', // Production frontend
+      /\.tennis-league\.com$/,  // Any subdomain of tennis-league.com
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Authorization', 'Content-Type', 'Accept'],
+  });
   
   // Swagger configuration
   const config = new DocumentBuilder()
@@ -15,8 +25,8 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth(
       { 
-        type: 'http', 
-        scheme: 'bearer', 
+        type: 'http',
+        scheme: 'bearer',
         bearerFormat: 'JWT',
         in: 'header'
       },

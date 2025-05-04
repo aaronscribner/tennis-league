@@ -20,12 +20,21 @@ export class UserService {
     return this.http.get<User>(`${this.apiUrl}/${id}`);
   }
 
+  // Alias for getUser to maintain compatibility
+  getUserById(id: string): Observable<User> {
+    return this.getUser(id);
+  }
+
   getCurrentUser(): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/profile`);
   }
 
   updateUser(id: string, user: Partial<User>): Observable<User> {
     return this.http.put<User>(`${this.apiUrl}/${id}`, user);
+  }
+
+  updateProfile(user: Partial<User>): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/profile`, user);
   }
 
   updateUserRole(id: string, role: UserRole): Observable<User> {

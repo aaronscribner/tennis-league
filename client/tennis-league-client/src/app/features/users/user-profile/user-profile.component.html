@@ -1,0 +1,119 @@
+<div class="profile-container">
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading profile...</p>
+  </div>
+
+  <div *ngIf="!loading && userProfile">
+    <div class="profile-header">
+      <div class="avatar-container">
+        <div class="profile-avatar">
+          <mat-icon class="avatar-icon">account_circle</mat-icon>
+        </div>
+      </div>
+      <div class="name-section">
+        <h1>{{ userProfile.firstName }} {{ userProfile.lastName }}</h1>
+        <div class="user-role" [ngClass]="{'coordinator': isCoordinator()}">
+          {{ isCoordinator() ? 'Coordinator' : 'Player' }}
+        </div>
+      </div>
+    </div>
+
+    <mat-card class="profile-details-card">
+      <mat-card-header>
+        <mat-card-title>Player Information</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="detail-grid">
+          <div class="detail-row">
+            <div class="detail-label">Email</div>
+            <div class="detail-value">{{ userProfile.email }}</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">Skill Level</div>
+            <div class="detail-value">
+              <div class="skill-rating">
+                <span>{{ userProfile.skillLevel }}</span>/10
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">Play Preference</div>
+            <div class="detail-value">{{ userProfile.preferSingles ? 'Singles' : 'Doubles' }}</div>
+          </div>
+
+          <div class="detail-row">
+            <div class="detail-label">Member Since</div>
+            <div class="detail-value">{{ userProfile.createdAt | date:'mediumDate' }}</div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="profile-stats-card">
+      <mat-card-header>
+        <mat-card-title>Player Stats</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="stats-overview">
+          <div class="stat-item">
+            <div class="stat-value">{{ playerStats.totalMatches || '0' }}</div>
+            <div class="stat-label">Total Matches</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ playerStats.wins || '0' }}</div>
+            <div class="stat-label">Wins</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ playerStats.losses || '0' }}</div>
+            <div class="stat-label">Losses</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">{{ getWinPercentage() }}%</div>
+            <div class="stat-label">Win Rate</div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="upcoming-events-card">
+      <mat-card-header>
+        <mat-card-title>Upcoming Events</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div *ngIf="!upcomingEvents || upcomingEvents.length === 0" class="no-events">
+          <p>You don't have any upcoming events.</p>
+          <button mat-raised-button color="primary" routerLink="/events">Browse Events</button>
+        </div>
+        <div *ngIf="upcomingEvents && upcomingEvents.length > 0" class="events-list">
+          <div *ngFor="let event of upcomingEvents" class="event-item">
+            <div class="event-date">{{ event.date | date:'MMM d' }}</div>
+            <div class="event-details">
+              <h3>{{ event.title }}</h3>
+              <p>{{ event.location }}</p>
+            </div>
+            <button mat-button color="primary" [routerLink]="['/events', event._id]">View</button>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="profile-actions">
+      <button mat-raised-button color="primary" (click)="editProfile()">
+        <mat-icon>edit</mat-icon> Edit Profile
+      </button>
+      <button mat-raised-button color="warn" (click)="logout()">
+        <mat-icon>logout</mat-icon> Logout
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && !userProfile" class="error-container">
+    <mat-icon>error</mat-icon>
+    <h2>Profile Not Found</h2>
+    <p>Sorry, we couldn't find your profile information.</p>
+    <button mat-raised-button color="primary" routerLink="/events">Go to Events</button>
+  </div>
+</div>

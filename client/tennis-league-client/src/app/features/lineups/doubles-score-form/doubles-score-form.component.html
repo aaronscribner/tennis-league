@@ -1,0 +1,93 @@
+<div class="score-form-container">
+  <h2 mat-dialog-title>Record Doubles Match Score - {{ getCombinationLabel() }}</h2>
+  
+  <mat-dialog-content>
+    <div class="teams-header">
+      <div class="team">
+        <h3>Team A</h3>
+        <div class="team-players">{{ getTeamALabel() }}</div>
+      </div>
+      <div class="vs-divider">vs</div>
+      <div class="team">
+        <h3>Team B</h3>
+        <div class="team-players">{{ getTeamBLabel() }}</div>
+      </div>
+    </div>
+    
+    <form [formGroup]="scoreForm">
+      <div formArrayName="sets">
+        <div *ngFor="let set of sets.controls; let i = index" [formGroupName]="i" class="set-container">
+          <h3 class="set-header">Set {{ i + 1 }}</h3>
+          
+          <div class="set-scores">
+            <mat-form-field appearance="outline">
+              <mat-label>Team A Games</mat-label>
+              <input matInput type="number" formControlName="teamAGames" min="0" max="7">
+              <mat-error *ngIf="set.get('teamAGames')?.hasError('required')">
+                Games are required
+              </mat-error>
+              <mat-error *ngIf="set.get('teamAGames')?.hasError('min') || set.get('teamAGames')?.hasError('max')">
+                Games must be between 0 and 7
+              </mat-error>
+            </mat-form-field>
+            
+            <div class="score-separator">-</div>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>Team B Games</mat-label>
+              <input matInput type="number" formControlName="teamBGames" min="0" max="7">
+              <mat-error *ngIf="set.get('teamBGames')?.hasError('required')">
+                Games are required
+              </mat-error>
+              <mat-error *ngIf="set.get('teamBGames')?.hasError('min') || set.get('teamBGames')?.hasError('max')">
+                Games must be between 0 and 7
+              </mat-error>
+            </mat-form-field>
+          </div>
+          
+          <div class="set-details">
+            <mat-checkbox formControlName="isTiebreak">Tiebreak Played</mat-checkbox>
+            
+            <mat-form-field appearance="outline" *ngIf="set.get('isTiebreak')?.value" class="tiebreak-score">
+              <mat-label>Tiebreak Score</mat-label>
+              <input matInput formControlName="tiebreakScore" placeholder="e.g., 7-5">
+            </mat-form-field>
+            
+            <mat-checkbox formControlName="isCompleted">Set Completed</mat-checkbox>
+          </div>
+          
+          <div class="set-actions">
+            <button mat-icon-button color="warn" (click)="removeSet(i)" [disabled]="sets.length <= 1">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button 
+          mat-raised-button
+          color="primary"
+          type="button"
+          [disabled]="sets.length >= maxSets"
+          (click)="addSet()">
+          Add Set
+        </button>
+        <mat-hint *ngIf="sets.length >= maxSets" class="max-sets-hint">
+          Maximum {{ maxSets }} sets allowed
+        </mat-hint>
+      </div>
+    </form>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      [disabled]="scoreForm.invalid" 
+      (click)="onSubmit()">
+      Save Score
+    </button>
+  </mat-dialog-actions>
+</div>

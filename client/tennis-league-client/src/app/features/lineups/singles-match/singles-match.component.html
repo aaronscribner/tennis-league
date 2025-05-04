@@ -1,0 +1,68 @@
+<div class="match-card" [class.completed]="match.isCompleted">
+  <div class="match-header">
+    <span class="match-number">Match #{{ match.matchNumber }}</span>
+    <span class="match-time">{{ match.scheduledTime | date: 'shortTime' }}</span>
+  </div>
+  
+  <div class="match-players">
+    <div class="player" [class.winner]="match.isCompleted && match.playerASetsWon > match.playerBSetsWon">
+      <div class="player-name">{{ getPlayerName(match.playerA) }}</div>
+      <div class="player-level">{{ getPlayerSkillLevel(match.playerA) }}</div>
+      <div class="player-sets" *ngIf="match.isCompleted">
+        {{ match.playerASetsWon }}
+      </div>
+    </div>
+    
+    <div class="vs-badge">
+      <span *ngIf="!match.isCompleted">VS</span>
+      <span *ngIf="match.isCompleted">{{ match.playerASetsWon }}-{{ match.playerBSetsWon }}</span>
+    </div>
+    
+    <div class="player" [class.winner]="match.isCompleted && match.playerBSetsWon > match.playerASetsWon">
+      <div class="player-name">{{ getPlayerName(match.playerB) }}</div>
+      <div class="player-level">{{ getPlayerSkillLevel(match.playerB) }}</div>
+      <div class="player-sets" *ngIf="match.isCompleted">
+        {{ match.playerBSetsWon }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="match-sets" *ngIf="match.isCompleted">
+    <div class="sets-table">
+      <div class="set-row header">
+        <div class="set-cell">Set</div>
+        <div class="set-cell">{{ getPlayerFirstName(match.playerA) }}</div>
+        <div class="set-cell">{{ getPlayerFirstName(match.playerB) }}</div>
+      </div>
+      <div class="set-row" *ngFor="let set of match.sets; let i = index">
+        <div class="set-cell">{{ i + 1 }}</div>
+        <div class="set-cell">{{ set.playerAGames }}</div>
+        <div class="set-cell">{{ set.playerBGames }}</div>
+        <div class="set-tiebreak" *ngIf="set.isTiebreak">
+          Tiebreak: {{ set.tiebreakScore }}
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="match-actions">
+    <ng-container *ngIf="!match.isCompleted">
+      <button mat-raised-button color="accent" 
+              (click)="recordScore()"
+              *ngIf="isCoordinator || isPlayerInMatch()">
+        <mat-icon>score</mat-icon>
+        Record Score
+      </button>
+      <span *ngIf="!isCoordinator && !isPlayerInMatch()" class="waiting">
+        Waiting for score...
+      </span>
+    </ng-container>
+    <div class="match-result" *ngIf="match.isCompleted">
+      <span class="completed-label">Completed</span>
+    </div>
+  </div>
+  
+  <div class="match-notes" *ngIf="match.notes">
+    <strong>Notes:</strong> {{ match.notes }}
+  </div>
+</div>

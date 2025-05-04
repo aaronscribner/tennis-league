@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { LineupsService } from './lineups.service';
 import { LineupsController } from './lineups.controller';
+import { MigrationService } from './migration.service';
 import { Event, EventSchema } from '../models/event.schema';
 import { Rsvp, RsvpSchema } from '../models/rsvp.schema';
 import { User, UserSchema } from '../models/user.schema';
@@ -20,7 +21,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,
   ],
   controllers: [LineupsController],
-  providers: [LineupsService],
-  exports: [LineupsService],
+  providers: [LineupsService, MigrationService],
+  exports: [LineupsService, MigrationService],
 })
 export class LineupsModule {}

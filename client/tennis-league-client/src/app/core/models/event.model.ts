@@ -1,21 +1,17 @@
 import { User } from './user.model';
 
-export enum EventType {
-  SINGLES = 'singles',
-  DOUBLES = 'doubles',
-  MIXED = 'mixed',
-}
-
 export interface Event {
   _id?: string;
   title: string;
   date: Date;
   description?: string;
   location: string;
-  maxPlayers: number;
+  maxSinglesPlayers: number;
+  maxDoublesPlayers: number;
   attendees?: User[] | string[];
-  eventType: EventType;
   isCancelled: boolean;
+  isSinglesAllowed: boolean;
+  isDoublesAllowed: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

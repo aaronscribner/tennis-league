@@ -6,14 +6,14 @@
 
   <ng-container *ngIf="!loadingLineup && !loadingEvent">
     <!-- Header -->
-    <div class="lineup-header" *ngIf="lineup && event">
+    <div class="lineup-header" *ngIf="(lineup || singlesMatches.length > 0 || doublesMatches.length > 0 || legacyMatches.length > 0) && event">
       <h1>Match Lineup</h1>
       <h2>{{ event.title }}</h2>
       <h3>{{ event.date | date: 'EEEE, MMMM d, y, h:mm a' }}</h3>
       <h4>{{ event.location }}</h4>
     </div>
 
-    <div *ngIf="!lineup" class="no-lineup">
+    <div *ngIf="!lineup && singlesMatches.length === 0 && doublesMatches.length === 0 && legacyMatches.length === 0" class="no-lineup">
       <mat-icon>playlist_remove</mat-icon>
       <h2>No Lineup Available</h2>
       <p>A lineup has not been generated for this event yet.</p>
@@ -23,7 +23,7 @@
       </button>
     </div>
 
-    <ng-container *ngIf="lineup">
+    <ng-container *ngIf="singlesMatches.length > 0 || doublesMatches.length > 0 || legacyMatches.length > 0 || lineup">
       <!-- Admin Actions -->
       <div class="admin-actions" *ngIf="isCoordinator">
         <button mat-stroked-button color="primary" (click)="regenerateLineup()">
@@ -36,32 +36,74 @@
         </button>
       </div>
 
-      <!-- Match List -->
-      <div class="matches-container">
-        <div class="match-card" *ngFor="let match of lineup.matches" [class.completed]="match.isCompleted" [class.your-match]="isCurrentUserInMatch(match)">
+      <!-- New format with singles and doubles -->
+      <ng-container *ngIf="singlesMatches.length > 0 || doublesMatches.length > 0">
+        <mat-tab-group mat-align-tabs="center" dynamicHeight>
+          <!-- Singles Matches Tab -->
+          <mat-tab label="Singles Matches" *ngIf="singlesMatches.length > 0">
+            <div class="matches-section">
+              <h2>Singles Matches</h2>
+              <div class="matches-list">
+                <app-singles-match 
+                  *ngFor="let match of singlesMatches" 
+                  [match]="match"
+                  [isCoordinator]="isCoordinator"
+                  (scoreUpdated)="onSinglesScoreUpdated($event)"
+                  [class.your-match]="isCurrentUserInSinglesMatch(match)">
+                </app-singles-match>
+              </div>
+            </div>
+          </mat-tab>
+          
+          <!-- Doubles Matches Tab -->
+          <mat-tab label="Doubles Matches" *ngIf="doublesMatches.length > 0">
+            <div class="matches-section">
+              <h2>Doubles Matches</h2>
+              <div class="matches-list">
+                <app-doubles-match 
+                  *ngFor="let match of doublesMatches" 
+                  [match]="match"
+                  [isCoordinator]="isCoordinator"
+                  (scoreUpdated)="onDoublesScoreUpdated($event)"
+                  [class.your-match]="isCurrentUserInDoublesMatch(match)">
+                </app-doubles-match>
+              </div>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      </ng-container>
+
+      <!-- Legacy Match List -->
+      <div class="matches-container" *ngIf="legacyMatches.length > 0 && singlesMatches.length === 0 && doublesMatches.length === 0">
+        <h2>Matches</h2>
+        <div class="match-card" *ngFor="let match of legacyMatches" [class.completed]="match.isCompleted" [class.your-match]="isCurrentUserInMatch(match)">
           <div class="match-header">
             <span class="match-number">Match #{{ match.matchNumber }}</span>
             <span class="match-time">{{ match.scheduledTime | date: 'shortTime' }}</span>
           </div>
           <div class="match-content">
             <!-- Team A -->
-            <div class="team" [class.winner]="match.isCompleted && match.teamA.score > match.teamB.score">
+            <div class="team" [class.winner]="match.isCompleted && (match.teamA?.score || 0) > (match.teamB?.score || 0)">
               <div class="team-label">Team A</div>
-              <div class="player" *ngFor="let player of match.teamA.players">
-                <div class="player-name">{{ getUserFullName(player) }}</div>
-                <div class="player-level">{{ getPlayerSkillLevel(player) }}</div>
-              </div>
-              <div class="score" *ngIf="match.isCompleted">{{ match.teamA.score }}</div>
+              <ng-container *ngIf="match.teamA?.players">
+                <div class="player" *ngFor="let player of getPlayersArray(match.teamA?.players)">
+                  <div class="player-name">{{ getUserFullName(player) }}</div>
+                  <div class="player-level">{{ getPlayerSkillLevel(player) }}</div>
+                </div>
+              </ng-container>
+              <div class="score" *ngIf="match.isCompleted">{{ match.teamA?.score || 0 }}</div>
             </div>
             
             <!-- Team B -->
-            <div class="team" [class.winner]="match.isCompleted && match.teamB.score > match.teamA.score">
+            <div class="team" [class.winner]="match.isCompleted && (match.teamB?.score || 0) > (match.teamA?.score || 0)">
               <div class="team-label">Team B</div>
-              <div class="player" *ngFor="let player of match.teamB.players">
-                <div class="player-name">{{ getUserFullName(player) }}</div>
-                <div class="player-level">{{ getPlayerSkillLevel(player) }}</div>
-              </div>
-              <div class="score" *ngIf="match.isCompleted">{{ match.teamB.score }}</div>
+              <ng-container *ngIf="match.teamB?.players">
+                <div class="player" *ngFor="let player of getPlayersArray(match.teamB?.players)">
+                  <div class="player-name">{{ getUserFullName(player) }}</div>
+                  <div class="player-level">{{ getPlayerSkillLevel(player) }}</div>
+                </div>
+              </ng-container>
+              <div class="score" *ngIf="match.isCompleted">{{ match.teamB?.score || 0 }}</div>
             </div>
           </div>
 
@@ -69,8 +111,7 @@
           <div class="match-actions">
             <ng-container *ngIf="!match.isCompleted">
               <button mat-raised-button color="accent" 
-                      *ngIf="isCurrentUserInMatch(match) || isCoordinator"
-                      (click)="recordScore(match)">
+                      *ngIf="isCurrentUserInMatch(match) || isCoordinator">
                 <mat-icon>score</mat-icon>
                 Record Score
               </button>
@@ -81,7 +122,7 @@
             <div class="match-result" *ngIf="match.isCompleted">
               <span class="completed-label">Completed</span>
               <span class="match-score">
-                {{ match.teamA.score }} - {{ match.teamB.score }}
+                {{ match.teamA?.score || 0 }} - {{ match.teamB?.score || 0 }}
               </span>
             </div>
           </div>

@@ -19,8 +19,11 @@ export class Rsvp {
   @Prop({ default: false })
   isAttending: boolean;
   
-  @Prop()
-  notes: string;
+  @Prop({ default: false })
+  playingSinglesOnly: boolean;
+  
+  @Prop({ default: false })
+  playingDoublesOnly: boolean;
 }
 
 export const RsvpSchema = SchemaFactory.createForClass(Rsvp);

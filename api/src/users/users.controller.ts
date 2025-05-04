@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, UnauthorizedException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { User, UserRole } from '../models/user.schema';
+import { User, UserDocument, UserRole } from '../models/user.schema';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
@@ -47,6 +47,148 @@ export class UsersController {
     
     if (!user) {
       throw new UnauthorizedException('User not found');
+    }
+    
+    // Sync roles from JWT if they exist
+    if (req.user.roles && Array.isArray(req.user.roles) && req.user.roles.length > 0) {
+      const jwtRoles = req.user.roles;
+      const rolesChanged = !user.roles || 
+        user.roles.length !== jwtRoles.length || 
+        !user.roles.every(role => jwtRoles.includes(role));
+      
+      // Update user roles in database if they've changed
+      if (rolesChanged) {
+        console.log(`Updating roles for user ${auth0Id} from JWT:`, jwtRoles);
+        
+        // Set primary role based on roles array
+        const primaryRole = jwtRoles.includes(UserRole.COORDINATOR) 
+          ? UserRole.COORDINATOR 
+          : UserRole.PLAYER;
+        
+        // Use the 'id' property which is available as a string in Mongoose documents
+        const userDoc = user as UserDocument;
+        const userId = userDoc.id || String(userDoc._id);
+        
+        const updatedUser = await this.usersService.update(
+          userId, 
+          {
+            roles: jwtRoles,
+            role: primaryRole
+          }
+        );
+        
+        return updatedUser;
+      }
+    }
+    
+    return user;
+  }
+
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiBody({ 
+    description: 'User profile data to update',
+    schema: {
+      type: 'object',
+      properties: {
+        firstName: { type: 'string', example: 'John' },
+        lastName: { type: 'string', example: 'Doe' },
+        email: { type: 'string', example: 'john.doe@example.com' },
+        phoneNumber: { type: 'string', example: '+1 (123) 456-7890' },
+        preferSingles: { type: 'boolean', example: true },
+        preferDoubles: { type: 'boolean', example: true }
+      }
+    }
+  })
+  @ApiResponse({ status: 200, description: 'Profile successfully updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  async updateProfile(@Request() req, @Body() updateProfileDto: Partial<User>) {
+    // Get the current user's Auth0 ID from the JWT token
+    const auth0Id = req.user.userId;
+    
+    // Find the user by Auth0 ID
+    const user = await this.usersService.findByAuth0Id(auth0Id);
+    
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    
+    // Create a safe update object with only allowed fields
+    const allowedFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'preferSingles', 'preferDoubles'];
+    const safeUpdate: Partial<User> = {};
+    
+    // Only include fields that are allowed to be updated
+    for (const field of allowedFields) {
+      if (updateProfileDto[field] !== undefined) {
+        safeUpdate[field] = updateProfileDto[field];
+      }
+    }
+    
+    // If email is being changed, check if it already exists
+    if (safeUpdate.email && safeUpdate.email !== user.email) {
+      const existingUser = await this.usersService.findByEmail(safeUpdate.email);
+      if (existingUser && existingUser.auth0Id !== auth0Id) {
+        throw new ConflictException('Email already in use by another account');
+      }
+    }
+    
+    // Use the existing user's ID to update their profile
+    const userDoc = user as UserDocument;
+    const userId = userDoc.id || String(userDoc._id);
+    
+    // Update the user profile
+    const updatedUser = await this.usersService.update(userId, safeUpdate);
+    return updatedUser;
+  }
+
+  @ApiOperation({ summary: 'Get user profile by Auth0 ID' })
+  @ApiParam({ name: 'auth0Id', description: 'Auth0 User ID' })
+  @ApiResponse({ status: 200, description: 'Return the user profile' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Get('profile/:auth0Id')
+  async getProfileByAuth0Id(@Param('auth0Id') auth0Id: string, @Request() req) {
+    const user = await this.usersService.findByAuth0Id(auth0Id);
+    
+    if (!user) {
+      throw new UnauthorizedException(`User with Auth0 ID ${auth0Id} not found`);
+    }
+    
+    // Sync roles from JWT if they exist and if this is the current user
+    if (req.user.userId === auth0Id && req.user.roles && Array.isArray(req.user.roles) && req.user.roles.length > 0) {
+      const jwtRoles = req.user.roles;
+      const rolesChanged = !user.roles || 
+        user.roles.length !== jwtRoles.length || 
+        !user.roles.every(role => jwtRoles.includes(role));
+      
+      // Update user roles in database if they've changed
+      if (rolesChanged) {
+        console.log(`Updating roles for user ${auth0Id} from JWT:`, jwtRoles);
+        
+        // Set primary role based on roles array
+        const primaryRole = jwtRoles.includes(UserRole.COORDINATOR) 
+          ? UserRole.COORDINATOR 
+          : UserRole.PLAYER;
+        
+        // Use the 'id' property which is available as a string in Mongoose documents
+        const userDoc = user as UserDocument;
+        const userId = userDoc.id || String(userDoc._id);
+        
+        const updatedUser = await this.usersService.update(
+          userId,
+          {
+            roles: jwtRoles,
+            role: primaryRole
+          }
+        );
+        
+        return updatedUser;
+      }
     }
     
     return user;

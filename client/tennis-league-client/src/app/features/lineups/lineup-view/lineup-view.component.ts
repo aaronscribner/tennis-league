@@ -1,20 +1,27 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, switchMap } from 'rxjs';
+import { Observable } from 'rxjs';
 
-import { LineupsService } from '../lineups.service';
+import { LineupService } from '../../../core/services/lineup.service';
 import { EventsService } from '../../events/events.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 import { Event } from '../../../core/models/event.model';
-import { Match } from '../../../core/models/match.model';
+import { Lineup, Match, SinglesMatch, DoublesMatch } from '../../../core/models/match.model';
 import { User, UserRole } from '../../../core/models/user.model';
 
 // Angular Material imports
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatCardModule } from '@angular/material/card';
+import { MatDividerModule } from '@angular/material/divider';
+
+// Import our components for singles and doubles matches
+import { SinglesMatchComponent } from '../singles-match/singles-match.component';
+import { DoublesMatchComponent } from '../doubles-match/doubles-match.component';
 
 @Component({
   selector: 'app-lineup-view',
@@ -25,48 +32,51 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     CommonModule,
     MatIconModule, 
     MatButtonModule, 
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatTabsModule,
+    MatCardModule,
+    MatDividerModule,
+    SinglesMatchComponent,
+    DoublesMatchComponent
   ]
 })
 export class LineupViewComponent implements OnInit {
   event$!: Observable<Event>;
-  matches$!: Observable<Match[]>;
   currentUser: User | null = null;
   eventId!: string;
   isCoordinator = false;
   
   loadingLineup = true;
   loadingEvent = true;
-  lineup: any = null;
+  lineup: Lineup | null = null;
   event: Event | null = null;
+  singlesMatches: SinglesMatch[] = [];
+  doublesMatches: DoublesMatch[] = [];
+  
+  // For backwards compatibility
+  legacyMatches: Match[] = [];
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private lineupsService: LineupsService,
+    private lineupService: LineupService,
     private eventsService: EventsService,
     private authService: AuthService
-  ) {}
+  ) {
+    // Set up an effect to react to changes in the currentUser signal
+    effect(() => {
+      this.currentUser = this.authService.currentUser();
+      this.isCoordinator = this.currentUser?.role === UserRole.COORDINATOR || 
+                           this.currentUser?.roles?.includes('coordinator') || 
+                           false;
+    });
+  }
 
   ngOnInit(): void {
-    this.authService.getUser().subscribe(user => {
-      this.currentUser = user;
-      this.isCoordinator = user?.role === UserRole.COORDINATOR || user?.roles?.includes('coordinator') || false;
-    });
-
-    this.route.paramMap.pipe(
-      switchMap(params => {
-        this.eventId = params.get('id') || '';
-        this.loadEventData();
-        return this.lineupsService.getMatches(this.eventId);
-      })
-    ).subscribe(matches => {
-      if (matches && matches.length > 0) {
-        this.lineup = {
-          matches: matches
-        };
-      }
-      this.loadingLineup = false;
+    this.route.paramMap.subscribe(params => {
+      this.eventId = params.get('id') || '';
+      this.loadEventData();
+      this.loadLineupData();
     });
   }
 
@@ -78,23 +88,85 @@ export class LineupViewComponent implements OnInit {
       this.loadingEvent = false;
     });
   }
+  
+  loadLineupData(): void {
+    this.loadingLineup = true;
+    
+    // Try to get lineup with singles and doubles matches
+    this.lineupService.getEventLineup(this.eventId).subscribe({
+      next: (lineup) => {
+        this.lineup = lineup;
+        this.singlesMatches = lineup.singlesMatches || [];
+        this.doublesMatches = lineup.doublesMatches || [];
+        this.loadingLineup = false;
+      },
+      error: (error) => {
+        console.error('Error loading lineup:', error);
+        
+        // Fallback to legacy method
+        this.lineupService.getMatches(this.eventId).subscribe(matches => {
+          this.legacyMatches = matches;
+          this.loadingLineup = false;
+        });
+      }
+    });
+  }
 
+  isCurrentUserInSinglesMatch(match: SinglesMatch): boolean {
+    if (!this.currentUser) return false;
+    
+    const userIsPlayerA = 
+      typeof match.playerA === 'string' 
+        ? match.playerA === this.currentUser.id 
+        : match.playerA.id === this.currentUser.id;
+    
+    const userIsPlayerB = 
+      typeof match.playerB === 'string' 
+        ? match.playerB === this.currentUser.id 
+        : match.playerB.id === this.currentUser.id;
+    
+    return userIsPlayerA || userIsPlayerB;
+  }
+  
+  isCurrentUserInDoublesMatch(match: DoublesMatch): boolean {
+    if (!this.currentUser) return false;
+    
+    return match.players.some(player => 
+      typeof player === 'string' 
+        ? player === this.currentUser?.id 
+        : player.id === this.currentUser?.id
+    );
+  }
+  
+  // Legacy method for backward compatibility
   isCurrentUserInMatch(match: Match): boolean {
     if (!this.currentUser) return false;
     
-    const userInTeamA = match.teamA.players.some(player => 
+    const userInTeamA = match.teamA?.players?.some((player: User | string) => 
       typeof player === 'string' ? player === this.currentUser?.id : player.id === this.currentUser?.id
     );
     
-    const userInTeamB = match.teamB.players.some(player => 
+    const userInTeamB = match.teamB?.players?.some((player: User | string) => 
       typeof player === 'string' ? player === this.currentUser?.id : player.id === this.currentUser?.id
     );
     
-    return userInTeamA || userInTeamB;
+    return Boolean(userInTeamA || userInTeamB);
   }
 
-  recordScore(match: Match): void {
-    this.router.navigate(['lineups', this.eventId, 'score', match.id]);
+  onSinglesScoreUpdated(match: SinglesMatch): void {
+    // Find and replace the updated match in the list
+    const index = this.singlesMatches.findIndex(m => m._id === match._id);
+    if (index !== -1) {
+      this.singlesMatches[index] = match;
+    }
+  }
+  
+  onDoublesScoreUpdated(match: DoublesMatch): void {
+    // Find and replace the updated match in the list
+    const index = this.doublesMatches.findIndex(m => m._id === match._id);
+    if (index !== -1) {
+      this.doublesMatches[index] = match;
+    }
   }
 
   backToEvent(): void {
@@ -103,23 +175,33 @@ export class LineupViewComponent implements OnInit {
 
   regenerateLineup(): void {
     this.loadingLineup = true;
-    this.lineupsService.generateLineup(this.eventId).subscribe(lineup => {
+    this.lineupService.generateLineup(this.eventId).subscribe(lineup => {
       this.lineup = lineup;
+      this.singlesMatches = lineup.singlesMatches || [];
+      this.doublesMatches = lineup.doublesMatches || [];
       this.loadingLineup = false;
     });
   }
 
   getUserFullName(player: any): string {
-    if (typeof player === 'string') {
+    if (!player || typeof player === 'string') {
       return 'Player';
     }
     return `${player.firstName} ${player.lastName}`;
   }
 
   getPlayerSkillLevel(player: any): string {
-    if (typeof player === 'string') {
+    if (!player || typeof player === 'string') {
       return 'N/A';
     }
     return player.skillLevel?.toString() || 'N/A';
+  }
+
+  // Helper method to safely handle arrays of players that could be either strings or User objects
+  getPlayersArray(players: any[] | undefined): any[] {
+    if (!players) {
+      return [];
+    }
+    return players;
   }
 }

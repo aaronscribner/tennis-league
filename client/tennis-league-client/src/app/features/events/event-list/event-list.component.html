@@ -1,10 +1,6 @@
 <div class="event-list-container">
   <div class="header">
     <h1>Upcoming Tennis Events</h1>
-    <button *ngIf="isCoordinator" mat-raised-button color="primary" (click)="createEvent()">
-      <mat-icon>add</mat-icon>
-      Create Event
-    </button>
   </div>
 
   <!-- Loading state -->
@@ -13,29 +9,38 @@
     <p>Loading events...</p>
   </div>
 
-  <!-- Empty state -->
+  <!-- Empty state with improved CTA -->
   <div *ngIf="!loading && events.length === 0" class="empty-state">
-    <mat-icon>event_busy</mat-icon>
-    <h3>No upcoming events</h3>
-    <p>There are currently no scheduled tennis events.</p>
-    <button *ngIf="isCoordinator" mat-raised-button color="primary" (click)="createEvent()">
-      Create First Event
-    </button>
+    <mat-icon class="empty-icon">event_busy</mat-icon>
+    <h2>No upcoming events</h2>
+    
+    <div *ngIf="isCoordinator" class="coordinator-cta">
+      <p>Be the first to organize a tennis event for your community!</p>
+      <button mat-raised-button color="primary" class="create-first-event-btn" (click)="createEvent()">
+        <mat-icon>add_circle</mat-icon>
+        Create First Event
+      </button>
+    </div>
   </div>
 
   <!-- Events grid -->
   <div class="events-grid" *ngIf="!loading && events.length > 0">
+    <!-- Admin CTA Button - Prominent placement with enhanced visibility -->
+    <!-- <div *ngIf="isCoordinator" class="admin-cta-container">
+      <button mat-raised-button color="accent" class="admin-cta-button" (click)="createEvent()">
+        <mat-icon>add_circle</mat-icon>
+        <span>Create New Event</span>
+      </button>
+    </div> -->
+
     <mat-card *ngFor="let event of events" class="event-card" [class.cancelled]="event.isCancelled">
       <mat-card-header>
-        <div mat-card-avatar class="event-avatar" [ngClass]="event.eventType"></div>
         <mat-card-title>{{ event.title }}</mat-card-title>
         <mat-card-subtitle>
           {{ event.date | date: 'EEEE, MMMM d, y, h:mm a' }}
           <span *ngIf="event.isCancelled" class="cancelled-badge">Cancelled</span>
         </mat-card-subtitle>
       </mat-card-header>
-      
-      <img mat-card-image src="assets/tennis-court.jpg" alt="Tennis court">
       
       <mat-card-content>
         <p class="location">
@@ -44,21 +49,39 @@
         </p>
         <p class="description" *ngIf="event.description">{{ event.description }}</p>
         <div class="event-meta">
-          <p class="event-type">
-            <strong>Type:</strong> {{ event.eventType | titlecase }}
-          </p>
-          <p class="spots">
-            <strong>Spots:</strong> 
-            <span [class.full]="calculateRemainingSpots(event) === 0">
-              {{ event.attendees ? event.attendees.length : 0 }} / {{ event.maxPlayers }}
-              <span *ngIf="calculateRemainingSpots(event) > 0" class="available">
-                ({{ calculateRemainingSpots(event) }} available)
-              </span>
-              <span *ngIf="calculateRemainingSpots(event) === 0" class="full">
-                (Full)
-              </span>
-            </span>
-          </p>
+          <div class="spots-container">
+            <ng-container *ngIf="event.isSinglesAllowed">
+              <p class="spots singles">
+                <mat-icon>person</mat-icon>
+                <strong>Singles:</strong> 
+                <span [class.full]="calculateRemainingSpots(event).singles === 0">
+                  {{ calculateRemainingSpots(event).totalAttendees }} / {{ event.maxSinglesPlayers }}
+                  <span *ngIf="calculateRemainingSpots(event).singles > 0" class="available">
+                    ({{ calculateRemainingSpots(event).singles }} available)
+                  </span>
+                  <span *ngIf="calculateRemainingSpots(event).singles === 0" class="full">
+                    (Full)
+                  </span>
+                </span>
+              </p>
+            </ng-container>
+            
+            <ng-container *ngIf="event.isDoublesAllowed">
+              <p class="spots doubles">
+                <mat-icon>groups</mat-icon>
+                <strong>Doubles:</strong>
+                <span [class.full]="calculateRemainingSpots(event).doubles === 0">
+                  {{ calculateRemainingSpots(event).totalAttendees }} / {{ event.maxDoublesPlayers }}
+                  <span *ngIf="calculateRemainingSpots(event).doubles > 0" class="available">
+                    ({{ calculateRemainingSpots(event).doubles }} available)
+                  </span>
+                  <span *ngIf="calculateRemainingSpots(event).doubles === 0" class="full">
+                    (Full)
+                  </span>
+                </span>
+              </p>
+            </ng-container>
+          </div>
         </div>
       </mat-card-content>
       

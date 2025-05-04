@@ -57,35 +57,49 @@
           </mat-form-field>
         </div>
 
-        <!-- Repeat Weekly Option -->
+        <!-- Singles Players Section -->
+        <h3 class="section-header">Singles Players</h3>
         <div class="form-row">
-          <mat-slide-toggle formControlName="repeatWeekly" color="primary">
-            Repeat Weekly for 8 weeks
-          </mat-slide-toggle>
-          <mat-hint *ngIf="eventForm.get('repeatWeekly')?.value">
-            This will create 8 additional events, one per week from the selected date.
-          </mat-hint>
+          <mat-form-field appearance="outline" class="form-col">
+            <mat-label>Maximum Singles Players</mat-label>
+            <input matInput type="number" formControlName="maxSinglesPlayers" required min="0" step="2">
+            <mat-hint>Must be a multiple of 2 (or 0 to disable singles matches)</mat-hint>
+            <mat-error *ngIf="eventForm.get('maxSinglesPlayers')?.hasError('required')">Maximum singles players is required</mat-error>
+            <mat-error *ngIf="eventForm.get('maxSinglesPlayers')?.hasError('min')">Minimum value is 0</mat-error>
+            <mat-error *ngIf="eventForm.get('maxSinglesPlayers')?.hasError('invalidSinglesCount')">Must be a multiple of 2</mat-error>
+          </mat-form-field>
+
+          <div class="info-text">
+            <p class="info-note" *ngIf="eventForm.get('maxSinglesPlayers')?.value >= 2">
+              Singles matches will be available (requires at least 2 players).
+            </p>
+            <p class="info-note error-text" *ngIf="eventForm.get('maxSinglesPlayers')?.value < 2">
+              Singles matches will not be available (requires at least 2 players).
+            </p>
+          </div>
         </div>
 
-        <!-- Event Type -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Event Type</mat-label>
-          <mat-select formControlName="eventType" required>
-            <mat-option *ngFor="let type of eventTypes" [value]="type">
-              {{ type | titlecase }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="eventForm.get('eventType')?.hasError('required')">Event type is required</mat-error>
-        </mat-form-field>
+        <!-- Doubles Players Section -->
+        <h3 class="section-header">Doubles Players</h3>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-col">
+            <mat-label>Maximum Doubles Players</mat-label>
+            <input matInput type="number" formControlName="maxDoublesPlayers" required min="0" step="4">
+            <mat-hint>Must be a multiple of 4 (or 0 to disable doubles matches)</mat-hint>
+            <mat-error *ngIf="eventForm.get('maxDoublesPlayers')?.hasError('required')">Maximum doubles players is required</mat-error>
+            <mat-error *ngIf="eventForm.get('maxDoublesPlayers')?.hasError('min')">Minimum value is 0</mat-error>
+            <mat-error *ngIf="eventForm.get('maxDoublesPlayers')?.hasError('invalidDoublesCount')">Must be a multiple of 4</mat-error>
+          </mat-form-field>
 
-        <!-- Max Players -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Maximum Players</mat-label>
-          <input matInput type="number" formControlName="maxPlayers" required min="2" max="24">
-          <mat-error *ngIf="eventForm.get('maxPlayers')?.hasError('required')">Maximum players is required</mat-error>
-          <mat-error *ngIf="eventForm.get('maxPlayers')?.hasError('min')">Minimum 2 players required</mat-error>
-          <mat-error *ngIf="eventForm.get('maxPlayers')?.hasError('max')">Maximum 24 players allowed</mat-error>
-        </mat-form-field>
+          <div class="info-text">
+            <p class="info-note" *ngIf="eventForm.get('maxDoublesPlayers')?.value >= 4">
+              Doubles matches will be available (requires at least 4 players).
+            </p>
+            <p class="info-note error-text" *ngIf="eventForm.get('maxDoublesPlayers')?.value < 4">
+              Doubles matches will not be available (requires at least 4 players).
+            </p>
+          </div>
+        </div>
 
         <!-- Description -->
         <mat-form-field appearance="outline" class="full-width">

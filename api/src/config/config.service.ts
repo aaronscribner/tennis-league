@@ -19,7 +19,7 @@ export class ConfigService {
 
   // Default values for local development
   private defaults = {
-    'mongodb-connection-string': 'mongodb+srv://tennisleague:ERm559sAusIWQIeD@cluster0.evwk5bc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    'mongodb-connection-string': 'mongodb+srv://tennisleague:ERm559sAusIWQIeD@cluster0.evwk5bc.mongodb.net/tennis-league?retryWrites=true&w=majority&appName=Cluster0',
     'auth0-domain': 'dev-ik81nhdv5j46bwjt.us.auth0.com',
     'auth0-audience': 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/',
     'auth0-client-id': 'gZo9AwUnNoOBE2eQ8AdZytbR1zSIk41B',

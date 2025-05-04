@@ -1,0 +1,117 @@
+.score-form-container {
+  padding: 16px 0;
+}
+
+.teams-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  
+  .team {
+    flex: 1;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    text-align: center;
+    
+    h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 16px;
+      color: #424242;
+    }
+    
+    .team-players {
+      font-size: 14px;
+      color: #616161;
+    }
+  }
+  
+  .vs-divider {
+    font-size: 14px;
+    color: #757575;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+}
+
+.set-container {
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.set-header {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 16px;
+  color: #424242;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 8px;
+}
+
+.set-scores {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  
+  mat-form-field {
+    flex: 1;
+  }
+  
+  .score-separator {
+    margin: 0 16px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+}
+
+.set-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 16px;
+  
+  mat-checkbox {
+    margin-right: 24px;
+    margin-bottom: 16px;
+  }
+  
+  .tiebreak-score {
+    flex-basis: 100%;
+    margin-bottom: 16px;
+  }
+}
+
+.set-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.form-actions {
+  margin: 24px 0;
+  display: flex;
+  align-items: center;
+  
+  .max-sets-hint {
+    margin-left: 16px;
+    color: #f44336;
+  }
+}
+
+mat-dialog-content {
+  min-height: 300px;
+  max-height: 80vh;
+}
+
+mat-dialog-actions {
+  padding: 16px 0 0;
+  margin-bottom: 0;
+}

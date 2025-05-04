@@ -7,7 +7,8 @@ export interface Rsvp {
   event: Event | string;
   preferSingles: boolean;
   isAttending: boolean;
-  notes?: string;
+  playingSinglesOnly?: boolean;
+  playingDoublesOnly?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

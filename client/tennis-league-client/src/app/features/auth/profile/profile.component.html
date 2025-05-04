@@ -3,11 +3,11 @@
     <mat-card-header>
       <div mat-card-avatar class="profile-avatar"></div>
       <mat-card-title>My Profile</mat-card-title>
-      <mat-card-subtitle *ngIf="(user$ | async)">{{ (user$ | async)?.firstName }} {{ (user$ | async)?.lastName }}</mat-card-subtitle>
+      <mat-card-subtitle *ngIf="authService.currentUser()">{{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</mat-card-subtitle>
     </mat-card-header>
     
     <mat-card-content>
-      @if (user$ | async; as user) {
+      @if (authService.currentUser(); as user) {
         <div class="profile-details">
           <div class="profile-row">
             <strong>Email:</strong>
@@ -26,7 +26,7 @@
           
           <div class="profile-row">
             <strong>Role:</strong>
-            <span>{{ (isCoordinator$ | async) ? 'Coordinator' : 'Player' }}</span>
+            <span>{{ isCoordinator() ? 'Coordinator' : 'Player' }}</span>
           </div>
           
           <div class="profile-row">
@@ -35,8 +35,13 @@
           </div>
           
           <div class="profile-row">
-            <strong>Prefers Singles:</strong>
-            <span>{{ user.preferSingles ? 'Yes' : 'No' }}</span>
+            <strong>Play Preferences:</strong>
+            <span>
+              <span *ngIf="user.preferSingles && user.preferDoubles">Singles and Doubles</span>
+              <span *ngIf="user.preferSingles && !user.preferDoubles">Singles only</span>
+              <span *ngIf="!user.preferSingles && user.preferDoubles">Doubles only</span>
+              <span *ngIf="!user.preferSingles && !user.preferDoubles">Not specified</span>
+            </span>
           </div>
           
           @if (user.updatedAt) {
@@ -53,6 +58,7 @@
     
     <mat-card-actions>
       <button mat-raised-button color="primary" routerLink="/events">View Events</button>
+      <button mat-raised-button color="accent" routerLink="/auth/profile/edit">Edit Profile</button>
       <button mat-raised-button color="warn" (click)="logout()">Logout</button>
     </mat-card-actions>
   </mat-card>

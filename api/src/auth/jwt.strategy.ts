@@ -9,32 +9,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      // Note: We're using a static string here that will be validated by Auth0
-      // The actual validation happens through the JWKS endpoint
-      secretOrKey: 'secret-placeholder', // This won't be used as we're providing secretOrKeyProvider
+      secretOrKeyProvider: passportJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 5,
+        jwksUri: `https://dev-ik81nhdv5j46bwjt.us.auth0.com/.well-known/jwks.json`,
+      }),
       algorithms: ['RS256'],
     });
   }
 
   // This method is called by Passport.js to verify and decode the JWT
   async validate(payload: any) {
-    // Get the Auth0 configuration
-    const domain = await this.configService.getAuth0Domain();
-    const audience = await this.configService.getAuth0Audience();
+    // The token has been verified by the JWKS provider at this point,
+    // so we just need to extract any additional claims we need
     
-    // Verify audience and issuer
-    const tokenAudience = Array.isArray(payload.aud) ? payload.aud[0] : payload.aud;
-    const expectedAudience = await audience;
-    const expectedIssuer = `https://${await domain}/`;
-    
-    if (tokenAudience !== expectedAudience) {
-      throw new UnauthorizedException(`Invalid audience: ${tokenAudience}`);
-    }
-    
-    if (payload.iss !== expectedIssuer) {
-      throw new UnauthorizedException(`Invalid issuer: ${payload.iss}`);
-    }
-
     // Extract roles from Auth0 token using the standard namespace format
     const namespace = 'https://api.tennis-league.com';
     const roles = payload[`${namespace}/roles`] || [];

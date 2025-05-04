@@ -34,11 +34,27 @@ export class EventsService {
   }
 
   async create(createEventDto: Partial<Event>): Promise<Event> {
+    // Set singles/doubles allowed based on max player counts
+    if (createEventDto.maxSinglesPlayers !== undefined) {
+      createEventDto.isSinglesAllowed = createEventDto.maxSinglesPlayers >= 2;
+    }
+    if (createEventDto.maxDoublesPlayers !== undefined) {
+      createEventDto.isDoublesAllowed = createEventDto.maxDoublesPlayers >= 4;
+    }
+    
     const newEvent = new this.eventModel(createEventDto);
     return newEvent.save();
   }
 
   async update(id: string, updateEventDto: Partial<Event>): Promise<Event> {
+    // Set singles/doubles allowed based on max player counts
+    if (updateEventDto.maxSinglesPlayers !== undefined) {
+      updateEventDto.isSinglesAllowed = updateEventDto.maxSinglesPlayers >= 2;
+    }
+    if (updateEventDto.maxDoublesPlayers !== undefined) {
+      updateEventDto.isDoublesAllowed = updateEventDto.maxDoublesPlayers >= 4;
+    }
+    
     const event = await this.eventModel.findByIdAndUpdate(id, updateEventDto, { new: true }).exec();
     if (!event) {
       throw new NotFoundException(`Event with ID ${id} not found`);
@@ -107,7 +123,8 @@ export class EventsService {
     event: string, 
     isAttending: boolean, 
     preferSingles: boolean,
-    notes?: string 
+    playingSinglesOnly?: boolean,
+    playingDoublesOnly?: boolean
   }): Promise<Rsvp> {
     const existingRsvp = await this.rsvpModel.findOne({
       user: rsvpData.user,
@@ -140,7 +157,12 @@ export class EventsService {
 
   async updateRsvp(
     id: string, 
-    updateData: { isAttending?: boolean, preferSingles?: boolean, notes?: string }
+    updateData: { 
+      isAttending?: boolean, 
+      preferSingles?: boolean,
+      playingSinglesOnly?: boolean,
+      playingDoublesOnly?: boolean
+    }
   ): Promise<Rsvp> {
     const rsvp = await this.rsvpModel.findById(id);
     if (!rsvp) {

@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SharedModule } from '../../../shared/shared.module';
 import { AuthService } from '../../../core/services/auth.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-callback',
@@ -11,9 +13,11 @@ import { AuthService } from '../../../core/services/auth.service';
   templateUrl: './callback.component.html',
   styleUrl: './callback.component.scss'
 })
-export class CallbackComponent implements OnInit {
+export class CallbackComponent implements OnInit, OnDestroy {
   loading = true;
   error = false;
+  
+  private destroyRef = inject(DestroyRef);
 
   constructor(
     private authService: AuthService,
@@ -22,26 +26,38 @@ export class CallbackComponent implements OnInit {
 
   ngOnInit(): void {
     // Monitor auth state
-    this.authService.isAuthenticated().subscribe({
+    this.authService.isAuthenticated().pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
       next: (isAuthenticated) => {
         if (isAuthenticated) {
-          // Get user profile before navigating
-          this.authService.getUser().subscribe({
-            next: (user) => {
-              if (user) {
-                this.router.navigate(['/events']);
-              } else {
-                console.error('User authenticated but profile not loaded');
+          // The AuthService will automatically populate the currentUser signal 
+          // when authentication happens, but we need to handle navigation
+          const userProfile = this.authService.currentUser();
+          
+          if (userProfile) {
+            // User profile is already loaded in the signal, navigate
+            this.router.navigate(['/events']);
+          } else {
+            // Wait for user profile to be loaded into the signal
+            const userSub = this.authService.user$.subscribe({
+              next: (user) => {
+                if (user) {
+                  this.router.navigate(['/events']);
+                } else {
+                  console.error('User authenticated but profile not loaded');
+                  this.error = true;
+                  this.loading = false;
+                }
+                userSub.unsubscribe();
+              },
+              error: (err) => {
+                console.error('Error loading user profile:', err);
                 this.error = true;
                 this.loading = false;
               }
-            },
-            error: (err) => {
-              console.error('Error loading user profile:', err);
-              this.error = true;
-              this.loading = false;
-            }
-          });
+            });
+          }
         } else {
           // Add a delay to give Auth0 time to process the callback
           setTimeout(() => {
@@ -61,5 +77,10 @@ export class CallbackComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    // Lifecycle method for cleanup
+    // The actual cleanup is handled by takeUntilDestroyed with destroyRef
   }
 }

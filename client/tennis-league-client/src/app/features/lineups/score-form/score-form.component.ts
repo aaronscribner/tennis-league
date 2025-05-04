@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SharedModule } from '../../../shared/shared.module';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
@@ -35,6 +35,12 @@ export class ScoreFormComponent implements OnInit {
     private snackBar: MatSnackBar
   ) {
     this.scoreForm = this.createScoreForm();
+    
+    // Set up an effect to react to changes in the currentUser signal
+    effect(() => {
+      this.currentUser = this.authService.currentUser();
+      this.isCoordinator = this.currentUser?.role === UserRole.COORDINATOR;
+    });
   }
 
   ngOnInit(): void {
@@ -45,12 +51,6 @@ export class ScoreFormComponent implements OnInit {
       this.router.navigate(['/events']);
       return;
     }
-    
-    // Load current user
-    this.authService.getUser().subscribe(user => {
-      this.currentUser = user;
-      this.isCoordinator = user?.role === UserRole.COORDINATOR;
-    });
     
     // Load match data
     this.loadMatch();
@@ -89,8 +89,8 @@ export class ScoreFormComponent implements OnInit {
     // If match already has a score, pre-fill the form
     if (this.match.isCompleted) {
       this.scoreForm.patchValue({
-        teamAScore: this.match.teamA.score,
-        teamBScore: this.match.teamB.score,
+        teamAScore: this.match.teamA?.score || 0,
+        teamBScore: this.match.teamB?.score || 0,
         notes: this.match.notes || ''
       });
     }
@@ -139,10 +139,10 @@ export class ScoreFormComponent implements OnInit {
   getTeamPlayers(team: 'A' | 'B'): string {
     if (!this.match) return '';
     
-    const players = team === 'A' ? this.match.teamA.players : this.match.teamB.players;
+    const players = team === 'A' ? this.match.teamA?.players : this.match.teamB?.players;
     if (!players || players.length === 0) return 'No players assigned';
     
-    return players.map(player => {
+    return players.map((player: User | string) => {
       if (typeof player === 'string') return 'Unknown Player';
       return `${player.firstName} ${player.lastName}`;
     }).join(', ');
@@ -161,18 +161,18 @@ export class ScoreFormComponent implements OnInit {
   isUserInMatch(): boolean {
     if (!this.currentUser || !this.match) return false;
     
-    const userId = this.currentUser._id;
+    const userId = this.currentUser._id || this.currentUser.id;
     
     // Check team A
-    const inTeamA = this.match.teamA.players.some(player => {
-      return typeof player === 'string' ? player === userId : player._id === userId;
+    const inTeamA = this.match.teamA?.players.some((player: User | string) => {
+      return typeof player === 'string' ? player === userId : (player._id || player.id) === userId;
     });
     
     // Check team B
-    const inTeamB = this.match.teamB.players.some(player => {
-      return typeof player === 'string' ? player === userId : player._id === userId;
+    const inTeamB = this.match.teamB?.players.some((player: User | string) => {
+      return typeof player === 'string' ? player === userId : (player._id || player.id) === userId;
     });
     
-    return inTeamA || inTeamB;
+    return !!inTeamA || !!inTeamB;
   }
 }

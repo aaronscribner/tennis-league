@@ -23,18 +23,30 @@ export class User {
   @Prop({ required: true, unique: true })
   email: string;
 
+  @ApiProperty({ description: 'User phone number', example: '+1 (123) 456-7890', required: false })
+  @Prop({ required: false })
+  phoneNumber: string;
+
   @ApiProperty({ description: 'Auth0 user ID', example: 'auth0|1234567890' })
   @Prop({ required: true })
   auth0Id: string;
 
   @ApiProperty({ 
-    description: 'User role', 
+    description: 'Primary user role', 
     enum: UserRole, 
     default: UserRole.PLAYER,
     example: UserRole.PLAYER 
   })
   @Prop({ enum: UserRole, default: UserRole.PLAYER })
   role: UserRole;
+
+  @ApiProperty({ 
+    description: 'User roles array from Auth0',
+    type: [String], 
+    example: ['player', 'coordinator'] 
+  })
+  @Prop({ type: [String], default: [] })
+  roles: string[];
 
   @ApiProperty({ description: 'Whether the user is active', default: true, example: true })
   @Prop({ default: true })
@@ -57,6 +69,14 @@ export class User {
   })
   @Prop({ default: false })
   preferSingles: boolean;
+
+  @ApiProperty({ 
+    description: 'Whether the user prefers playing doubles matches', 
+    default: false,
+    example: false 
+  })
+  @Prop({ default: false })
+  preferDoubles: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

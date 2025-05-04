@@ -1,0 +1,121 @@
+<div class="score-form-container">
+  <h2 mat-dialog-title>Record Singles Match Score</h2>
+  
+  <mat-dialog-content>
+    <div class="players-header">
+      <div class="player">{{ playerAName }}</div>
+      <div class="vs-divider">vs</div>
+      <div class="player">{{ playerBName }}</div>
+    </div>
+    
+    <form [formGroup]="scoreForm">
+      <div formArrayName="sets">
+        <div *ngFor="let set of sets.controls; let i = index" [formGroupName]="i" class="set-container">
+          <h3 class="set-header">Set {{ i + 1 }}</h3>
+          
+          <div class="set-scores">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ playerAName }} Games</mat-label>
+              <input matInput type="number" formControlName="playerAGames" min="0" max="7" readonly>
+            </mat-form-field>
+            
+            <div class="score-separator">-</div>
+            
+            <mat-form-field appearance="outline">
+              <mat-label>{{ playerBName }} Games</mat-label>
+              <input matInput type="number" formControlName="playerBGames" min="0" max="7" readonly>
+            </mat-form-field>
+          </div>
+          
+          <div class="set-details">
+            <mat-checkbox formControlName="isTiebreak">Tiebreak Played</mat-checkbox>
+            
+            <mat-form-field appearance="outline" *ngIf="set.get('isTiebreak')?.value" class="tiebreak-score">
+              <mat-label>Tiebreak Score</mat-label>
+              <input matInput formControlName="tiebreakScore" placeholder="e.g., 7-5">
+            </mat-form-field>
+            
+            <mat-checkbox formControlName="isCompleted">Set Completed</mat-checkbox>
+          </div>
+          
+          <div class="games-container">
+            <h4 class="games-header">Games</h4>
+            <div formArrayName="games" class="games-list">
+              <div *ngFor="let game of getGames(i).controls; let j = index" [formGroupName]="j" class="game-item">
+                <div class="game-scores">
+                  <h5>Game {{ j + 1 }}</h5>
+                  <div class="game-score-inputs">
+                    <mat-form-field appearance="outline" class="score-input">
+                      <mat-label>{{ playerAName }}</mat-label>
+                      <mat-select formControlName="playerAScore">
+                        <mat-option [value]="0">0</mat-option>
+                        <mat-option [value]="1">15</mat-option>
+                        <mat-option [value]="2">30</mat-option>
+                        <mat-option [value]="3">40</mat-option>
+                        <mat-option [value]="4">Game</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                    
+                    <div class="score-separator">-</div>
+                    
+                    <mat-form-field appearance="outline" class="score-input">
+                      <mat-label>{{ playerBName }}</mat-label>
+                      <mat-select formControlName="playerBScore">
+                        <mat-option [value]="0">0</mat-option>
+                        <mat-option [value]="1">15</mat-option>
+                        <mat-option [value]="2">30</mat-option>
+                        <mat-option [value]="3">40</mat-option>
+                        <mat-option [value]="4">Game</mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                  </div>
+                  <mat-checkbox formControlName="isCompleted" (change)="updateSetGameTotals(i)">Game Completed</mat-checkbox>
+                  
+                  <button mat-icon-button color="warn" (click)="removeGame(i, j)" 
+                          *ngIf="getGames(i).controls.length > 1" class="remove-game-btn">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+              
+              <button mat-stroked-button (click)="addGame(i)" class="add-game-btn">
+                <mat-icon>add</mat-icon> Add Game
+              </button>
+            </div>
+          </div>
+          
+          <div class="set-actions">
+            <button mat-icon-button color="warn" (click)="removeSet(i)" [disabled]="sets.length <= 1">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-actions">
+        <button 
+          mat-raised-button
+          color="primary"
+          type="button"
+          [disabled]="sets.length >= maxSets"
+          (click)="addSet()">
+          Add Set
+        </button>
+        <mat-hint *ngIf="sets.length >= maxSets" class="max-sets-hint">
+          Maximum {{ maxSets }} sets allowed
+        </mat-hint>
+      </div>
+    </form>
+  </mat-dialog-content>
+  
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      [disabled]="scoreForm.invalid" 
+      (click)="onSubmit()">
+      Save Score
+    </button>
+  </mat-dialog-actions>
+</div>
