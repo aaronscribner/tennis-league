@@ -58,10 +58,34 @@ export class EventsService {
       );
   }
 
+  updateEventSeries(seriesId: string, eventData: Partial<Event>): Observable<Event[]> {
+    return this.http.patch<Event[]>(`${this.apiUrl}/series/${seriesId}/update`, eventData)
+      .pipe(
+        tap(updatedEvents => console.log(`Event series updated with id ${seriesId}:`, updatedEvents)),
+        catchError(this.handleError)
+      );
+  }
+
   cancelEvent(id: string): Observable<Event> {
-    return this.http.put<Event>(`${this.apiUrl}/${id}/cancel`, {})
+    return this.http.patch<Event>(`${this.apiUrl}/${id}/cancel`, {})
       .pipe(
         tap(cancelledEvent => console.log(`Event cancelled with id ${id}:`, cancelledEvent)),
+        catchError(this.handleError)
+      );
+  }
+
+  cancelEventSeries(seriesId: string): Observable<Event[]> {
+    return this.http.patch<Event[]>(`${this.apiUrl}/series/${seriesId}/cancel`, {})
+      .pipe(
+        tap(cancelledEvents => console.log(`Event series cancelled with id ${seriesId}:`, cancelledEvents)),
+        catchError(this.handleError)
+      );
+  }
+
+  getEventsBySeries(seriesId: string): Observable<Event[]> {
+    return this.http.get<Event[]>(`${this.apiUrl}/series/${seriesId}`)
+      .pipe(
+        tap(events => console.log(`Events fetched for series id ${seriesId}:`, events)),
         catchError(this.handleError)
       );
   }

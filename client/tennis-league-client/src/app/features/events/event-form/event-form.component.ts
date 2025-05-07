@@ -4,7 +4,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractContro
 import { ActivatedRoute, Router } from '@angular/router';
 import { SharedModule } from '../../../shared/shared.module';
 import { EventService } from '../../../core/services/event.service';
-import { Event } from '../../../core/models/event.model';
+import { Event, RecurrenceType } from '../../../core/models/event.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
@@ -23,6 +23,14 @@ export class EventFormComponent implements OnInit {
   // For time selection
   timeSlots: string[] = [];
   
+  // For recurrence
+  recurrenceTypes = [
+    { value: RecurrenceType.NONE, label: 'None' },
+    { value: RecurrenceType.DAILY, label: 'Daily' },
+    { value: RecurrenceType.WEEKLY, label: 'Weekly' },
+    { value: RecurrenceType.MONTHLY, label: 'Monthly' }
+  ];
+  
   constructor(
     private fb: FormBuilder,
     private eventService: EventService,
@@ -32,6 +40,7 @@ export class EventFormComponent implements OnInit {
   ) {
     this.eventForm = this.createForm();
     this.generateTimeSlots();
+    this.setupRecurrenceValidation();
   }
 
   ngOnInit(): void {
@@ -89,6 +98,10 @@ export class EventFormComponent implements OnInit {
   }
 
   private createForm(): FormGroup {
+    // Get default end date (1 month from today)
+    const defaultEndDate = new Date();
+    defaultEndDate.setMonth(defaultEndDate.getMonth() + 1);
+    
     return this.fb.group({
       title: ['', [Validators.required, Validators.maxLength(100)]],
       location: ['', [Validators.required, Validators.maxLength(200)]],
@@ -99,8 +112,45 @@ export class EventFormComponent implements OnInit {
       maxSinglesPlayers: [8, [Validators.required, Validators.min(0), this.validateSinglesCount.bind(this)]],
       maxDoublesPlayers: [8, [Validators.required, Validators.min(0), this.validateDoublesCount.bind(this)]],
       isSinglesAllowed: [true],
-      isDoublesAllowed: [true]
+      isDoublesAllowed: [true],
+      recurrenceType: [RecurrenceType.NONE],
+      recurrenceEndDate: [defaultEndDate]
     });
+  }
+
+  private setupRecurrenceValidation(): void {
+    // Make recurrenceEndDate required when recurrence type is not NONE
+    this.eventForm.get('recurrenceType')?.valueChanges.subscribe(value => {
+      const recurrenceEndDateControl = this.eventForm.get('recurrenceEndDate');
+      
+      if (value !== RecurrenceType.NONE) {
+        recurrenceEndDateControl?.setValidators([Validators.required, this.validateEndDate.bind(this)]);
+      } else {
+        recurrenceEndDateControl?.clearValidators();
+      }
+      
+      recurrenceEndDateControl?.updateValueAndValidity();
+    });
+  }
+  
+  private validateEndDate(control: AbstractControl): ValidationErrors | null {
+    const endDate = control.value;
+    if (!endDate) return { required: true };
+    
+    const today = new Date();
+    const oneYearFromToday = new Date();
+    oneYearFromToday.setFullYear(today.getFullYear() + 1);
+    
+    if (new Date(endDate) > oneYearFromToday) {
+      return { maxDateExceeded: true };
+    }
+    
+    const startDate = this.eventForm.get('date')?.value;
+    if (startDate && new Date(endDate) < new Date(startDate)) {
+      return { endDateBeforeStartDate: true };
+    }
+    
+    return null;
   }
 
   private generateTimeSlots(): void {
@@ -133,6 +183,14 @@ export class EventFormComponent implements OnInit {
     const endAmPm = endHours < 12 ? 'AM' : 'PM';
     const endTime = `${formattedEndHour}:${endMinutes.toString().padStart(2, '0')} ${endAmPm}`;
     
+    // Recurrence end date (default to a month after event date if not specified)
+    const recurrenceEndDate = event.recurrenceEndDate ? new Date(event.recurrenceEndDate) : 
+      (() => {
+        const defaultDate = new Date(date);
+        defaultDate.setMonth(defaultDate.getMonth() + 1);
+        return defaultDate;
+      })();
+    
     this.eventForm.patchValue({
       title: event.title,
       location: event.location,
@@ -143,8 +201,16 @@ export class EventFormComponent implements OnInit {
       maxSinglesPlayers: event.maxSinglesPlayers || 8,
       maxDoublesPlayers: event.maxDoublesPlayers || 8,
       isSinglesAllowed: event.isSinglesAllowed !== undefined ? event.isSinglesAllowed : true,
-      isDoublesAllowed: event.isDoublesAllowed !== undefined ? event.isDoublesAllowed : true
+      isDoublesAllowed: event.isDoublesAllowed !== undefined ? event.isDoublesAllowed : true,
+      recurrenceType: event.recurrenceType || RecurrenceType.NONE,
+      recurrenceEndDate: recurrenceEndDate
     });
+    
+    // Disable recurrence fields in edit mode
+    if (this.isEditMode) {
+      this.eventForm.get('recurrenceType')?.disable();
+      this.eventForm.get('recurrenceEndDate')?.disable();
+    }
   }
 
   onSubmit(): void {
@@ -175,6 +241,10 @@ export class EventFormComponent implements OnInit {
     const maxSinglesPlayers = formValue.maxSinglesPlayers;
     const maxDoublesPlayers = formValue.maxDoublesPlayers;
     
+    // Prepare recurrence data
+    const recurrenceType = formValue.recurrenceType;
+    const recurrenceEndDate = recurrenceType !== RecurrenceType.NONE ? formValue.recurrenceEndDate : null;
+    
     const eventData: Partial<Event> = {
       title: formValue.title,
       location: formValue.location,
@@ -184,7 +254,9 @@ export class EventFormComponent implements OnInit {
       maxDoublesPlayers: maxDoublesPlayers,
       isSinglesAllowed: maxSinglesPlayers >= 2,
       isDoublesAllowed: maxDoublesPlayers >= 4,
-      isCancelled: false
+      isCancelled: false,
+      recurrenceType: recurrenceType,
+      recurrenceEndDate: recurrenceEndDate
     };
 
     if (this.isEditMode && this.eventId) {

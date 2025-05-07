@@ -74,12 +74,35 @@ export class LineupsService {
       throw new NotFoundException(`Event with ID ${eventId} not found`);
     }
 
+    // Check if the event has attendees
+    if (!event.attendees || event.attendees.length === 0) {
+      // Create an empty lineup instead of throwing an error
+      const emptyLineup = new this.lineupModel({
+        event: eventId,
+        singlesMatches: [],
+        doublesMatches: [],
+        isPublished: true,
+        generationType: 'auto',
+        notes: 'No attendees were registered for this event. Add attendees and regenerate the lineup.'
+      });
+      return emptyLineup.save();
+    }
+
     const users = await this.userModel.find({ 
       _id: { $in: event.attendees } 
     }).exec();
 
     if (users.length === 0) {
-      throw new Error('No attendees found for this event');
+      // Create an empty lineup if no user records found for attendees
+      const emptyLineup = new this.lineupModel({
+        event: eventId,
+        singlesMatches: [],
+        doublesMatches: [],
+        isPublished: true,
+        generationType: 'auto',
+        notes: 'No valid attendee records were found. Check user accounts and regenerate the lineup.'
+      });
+      return emptyLineup.save();
     }
 
     const { singlesMatches, doublesMatches } = this.createMatchesFromUsers(users, event);
@@ -578,12 +601,55 @@ export class LineupsService {
       throw new NotFoundException(`Event with ID ${eventId} not found`);
     }
     
+    // Check if the event has attendees
+    if (!event.attendees || event.attendees.length === 0) {
+      // Create or update with an empty lineup
+      const existingLineup = await this.lineupModel.findOne({ event: eventId }).exec();
+      
+      if (existingLineup) {
+        existingLineup.singlesMatches = [];
+        existingLineup.doublesMatches = [];
+        existingLineup.isPublished = true;
+        existingLineup.notes = 'No attendees were registered for this event. Add attendees and regenerate the lineup.';
+        return await existingLineup.save();
+      } else {
+        const emptyLineup = new this.lineupModel({
+          event: event._id,
+          singlesMatches: [],
+          doublesMatches: [],
+          isPublished: true,
+          generationType: 'auto',
+          notes: 'No attendees were registered for this event. Add attendees and regenerate the lineup.'
+        });
+        return emptyLineup.save();
+      }
+    }
+    
     const users = await this.userModel.find({ 
       _id: { $in: event.attendees } 
     }).exec();
     
     if (users.length === 0) {
-      throw new Error('No attendees found for this event');
+      // Create or update with an empty lineup if no user records found
+      const existingLineup = await this.lineupModel.findOne({ event: eventId }).exec();
+      
+      if (existingLineup) {
+        existingLineup.singlesMatches = [];
+        existingLineup.doublesMatches = [];
+        existingLineup.isPublished = true;
+        existingLineup.notes = 'No valid attendee records were found. Check user accounts and regenerate the lineup.';
+        return await existingLineup.save();
+      } else {
+        const emptyLineup = new this.lineupModel({
+          event: event._id,
+          singlesMatches: [],
+          doublesMatches: [],
+          isPublished: true,
+          generationType: 'auto',
+          notes: 'No valid attendee records were found. Check user accounts and regenerate the lineup.'
+        });
+        return emptyLineup.save();
+      }
     }
     
     const { singlesMatches, doublesMatches } = this.createMatchesFromUsers(users, event);
@@ -594,6 +660,9 @@ export class LineupsService {
       existingLineup.singlesMatches = singlesMatches;
       existingLineup.doublesMatches = doublesMatches;
       existingLineup.isPublished = true;
+      
+      // Fix for TypeScript error - notes property is now defined in the schema
+      existingLineup.notes = ''; // Clear any previous error notes
       return await existingLineup.save();
     } else {
       const lineup = new this.lineupModel({
@@ -602,6 +671,7 @@ export class LineupsService {
         doublesMatches,
         isPublished: true,
         generationType: 'auto',
+        notes: '' // Initialize with empty notes
       });
       
       return await lineup.save();

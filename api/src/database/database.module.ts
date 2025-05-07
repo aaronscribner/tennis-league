@@ -9,7 +9,7 @@ import { ConfigService } from '../config/config.service';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
-        uri: await configService.getMongoConnectionString(),
+        uri: configService.getMongoUri(),
       }),
     }),
   ],

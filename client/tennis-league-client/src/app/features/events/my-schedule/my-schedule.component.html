@@ -1,1 +1,70 @@
-<p>my-schedule works!</p>
+<div class="my-schedule-container">
+  <div class="header">
+    <h1>My Tennis Schedule</h1>
+  </div>
+
+  <!-- Loading state -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading your schedule...</p>
+  </div>
+
+  <!-- Authentication check -->
+  <div *ngIf="!(isAuthenticated$ | async)" class="auth-required">
+    <mat-card>
+      <mat-card-content>
+        <h2>Sign in to view your schedule</h2>
+        <p>You need to be logged in to see your upcoming tennis events.</p>
+        <button mat-raised-button color="primary" (click)="login()">
+          <mat-icon>login</mat-icon>
+          Sign In
+        </button>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Empty state -->
+  <div *ngIf="!loading && events.length === 0 && (isAuthenticated$ | async)" class="empty-state">
+    <mat-icon class="empty-icon">event_busy</mat-icon>
+    <h2>No upcoming events on your schedule</h2>
+    <p>You haven't RSVP'd to attend any upcoming tennis events.</p>
+    <button mat-raised-button color="primary" routerLink="/events">
+      <mat-icon>search</mat-icon>
+      Browse Events
+    </button>
+  </div>
+
+  <!-- Events schedule -->
+  <div *ngIf="!loading && events.length > 0" class="events-grid">
+    <mat-card *ngFor="let event of events" class="event-card" [class.cancelled]="event.isCancelled">
+      <mat-card-header>
+        <mat-card-title>{{ event.title }}</mat-card-title>
+        <mat-card-subtitle>
+          {{ event.date | date: 'EEEE, MMMM d, y, h:mm a' }}
+          <span *ngIf="event.isCancelled" class="cancelled-badge">Cancelled</span>
+        </mat-card-subtitle>
+      </mat-card-header>
+      
+      <mat-card-content>
+        <p class="location">
+          <mat-icon>location_on</mat-icon>
+          {{ event.location }}
+        </p>
+        <p class="description" *ngIf="event.description">{{ event.description }}</p>
+      </mat-card-content>
+      
+      <mat-card-actions>
+        <button mat-button color="primary" (click)="viewEvent(event._id || '')">
+          <mat-icon>info</mat-icon> 
+          Details
+        </button>
+        
+        <!-- View lineup button only if event is in the near future -->
+        <button mat-button color="accent" (click)="viewLineup(event._id || '')">
+          <mat-icon>people</mat-icon>
+          View Lineup
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+</div>

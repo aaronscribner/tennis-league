@@ -95,7 +95,9 @@ export class UsersController {
         email: { type: 'string', example: 'john.doe@example.com' },
         phoneNumber: { type: 'string', example: '+1 (123) 456-7890' },
         preferSingles: { type: 'boolean', example: true },
-        preferDoubles: { type: 'boolean', example: true }
+        preferDoubles: { type: 'boolean', example: true },
+        nickname: { type: 'string', example: 'Johnny' },
+        displayOnlyNickname: { type: 'boolean', example: false }
       }
     }
   })
@@ -117,7 +119,7 @@ export class UsersController {
     }
     
     // Create a safe update object with only allowed fields
-    const allowedFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'preferSingles', 'preferDoubles'];
+    const allowedFields = ['firstName', 'lastName', 'email', 'phoneNumber', 'city', 'preferSingles', 'preferDoubles', 'nickname', 'displayOnlyNickname'];
     const safeUpdate: Partial<User> = {};
     
     // Only include fields that are allowed to be updated

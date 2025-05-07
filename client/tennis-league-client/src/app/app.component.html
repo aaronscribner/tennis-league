@@ -10,7 +10,7 @@
       <ng-container *ngIf="isAuthenticated$ | async">
         <a mat-list-item routerLink="/users/profile" routerLinkActive="active">My Profile</a>
         <ng-container *ngIf="isCoordinator()">
-          <a mat-list-item routerLink="/users" routerLinkActive="active">Users Management</a>
+          <a mat-list-item routerLink="/admin" routerLinkActive="active">Admin Settings</a>
         </ng-container>
       </ng-container>
     </mat-nav-list>
@@ -36,7 +36,7 @@
           <mat-icon>account_circle</mat-icon>
         </button>
         <mat-menu #menu="matMenu">
-          <button mat-menu-item routerLink="/users/profile">
+          <button mat-menu-item routerLink="/auth/profile">
             <mat-icon>person</mat-icon>
             <span>Profile</span>
           </button>

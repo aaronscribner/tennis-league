@@ -1,42 +1,48 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatTableModule } from '@angular/material/table';
+import { RouterModule } from '@angular/router';
+
+// Material imports
+import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTableModule } from '@angular/material/table';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatCardModule } from '@angular/material/card';
 import { MatSnackBarModule, MatSnackBar } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { RouterModule } from '@angular/router';
+import { MatTabGroup, MatTabsModule } from '@angular/material/tabs';
 
+// Services and models
 import { UserService } from '../../../core/services/user.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { User, UserRole } from '../../../core/models/user.model';
 
 @Component({
-  selector: 'app-user-list',
+  selector: 'app-admin-dashboard',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    MatTableModule,
-    MatButtonModule,
+    RouterModule, 
+    MatCardModule, 
+    MatButtonModule, 
     MatIconModule,
+    MatTableModule,
     MatInputModule,
     MatFormFieldModule,
-    MatCardModule,
     MatSnackBarModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
-    RouterModule
+    MatTabsModule
   ],
-  templateUrl: './user-list.component.html',
-  styleUrl: './user-list.component.scss'
+  templateUrl: './admin-dashboard.component.html',
+  styleUrls: ['./admin-dashboard.component.scss']
 })
-export class UserListComponent implements OnInit {
+export class AdminDashboardComponent implements OnInit {
+  // User management properties
   users: User[] = [];
   loading = true;
   currentUserId = '';
@@ -50,6 +56,10 @@ export class UserListComponent implements OnInit {
     'actions'
   ];
 
+  // Regular expression for skills: exactly 1 digit followed by exactly 2 decimal places
+  skillLevelPattern = '^[3-5]\\.[0-9]{2}$';
+
+  // Services
   private userService = inject(UserService);
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
@@ -181,19 +191,68 @@ export class UserListComponent implements OnInit {
     return user.role === UserRole.COORDINATOR || (user.roles?.includes(UserRole.COORDINATOR) || false);
   }
 
-  updateSkillLevel(userId: string, skillLevel: number): void {
+  updateSkillLevel(userId: string, skillLevel: number | string): void {
     const editedUser = this.editableUsers.get(userId);
     if (!editedUser) return;
     
+    // Convert to number if it's a string
+    let numericValue: number;
+    if (typeof skillLevel === 'string') {
+      numericValue = parseFloat(skillLevel);
+    } else {
+      numericValue = skillLevel;
+    }
+    
     // Ensure skillLevel is within the allowed range (3.00-5.00)
-    if (skillLevel < 3.00) skillLevel = 3.00;
-    if (skillLevel > 5.00) skillLevel = 5.00;
+    if (isNaN(numericValue) || numericValue < 3.00) numericValue = 3.00;
+    if (numericValue > 5.00) numericValue = 5.00;
     
     // Round to 2 decimal places
-    skillLevel = parseFloat(skillLevel.toFixed(2));
+    numericValue = parseFloat(numericValue.toFixed(2));
     
     // Update the skill level in the editable copy
-    editedUser.skillLevel = skillLevel;
+    editedUser.skillLevel = numericValue;
+  }
+
+  formatSkillLevel(skillLevel: number | undefined): string {
+    if (skillLevel === undefined || isNaN(skillLevel)) {
+      return '3.00';
+    }
+    return skillLevel.toFixed(2);
+  }
+  
+  validateNumberInput(event: KeyboardEvent): boolean {
+    // Allow: backspace, delete, tab, escape, enter, decimal point
+    const controlKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', '.'];
+    
+    // Allow decimal point only once
+    if (event.key === '.' && (event.target as HTMLInputElement).value.includes('.')) {
+      event.preventDefault();
+      return false;
+    }
+    
+    // Allow control keys
+    if (controlKeys.includes(event.key)) {
+      return true;
+    }
+    
+    // Allow: numbers only (0-9)
+    if (!/[0-9]/.test(event.key)) {
+      event.preventDefault();
+      return false;
+    }
+    
+    // Validate decimal places (max 2)
+    const input = (event.target as HTMLInputElement).value;
+    if (input.includes('.')) {
+      const decimalPlaces = input.split('.')[1];
+      if (decimalPlaces && decimalPlaces.length >= 2) {
+        event.preventDefault();
+        return false;
+      }
+    }
+    
+    return true;
   }
 
   getUserFullName(user: User): string {

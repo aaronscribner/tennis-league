@@ -6,7 +6,7 @@ export const environment = {
     clientId: 'gZo9AwUnNoOBE2eQ8AdZytbR1zSIk41B',
     authorizationParams: {
       redirect_uri: window.location.origin + '/callback',
-      audience: 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/',
+      audience: 'https://api.tennis-league.com', // Updated to use your API identifier
       scope: 'openid profile email offline_access'
     },
     cacheLocation: 'localstorage' as const,
@@ -18,7 +18,7 @@ export const environment = {
           uri: 'http://localhost:3000/*',
           tokenOptions: {
             authorizationParams: {
-              audience: 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/'
+              audience: 'https://api.tennis-league.com' // Updated to use your API identifier
             }
           }
         }

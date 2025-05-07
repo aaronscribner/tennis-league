@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { UserProfileComponent } from './user-profile/user-profile.component';
-import { UserListComponent } from './user-list/user-list.component';
 import { UserDetailsComponent } from './user-details/user-details.component';
+import { EditProfileComponent } from '../auth/profile/edit-profile/edit-profile.component';
 import { authGuard } from '../../core/guards/auth.guard';
 
 export const USERS_ROUTES: Routes = [
@@ -10,9 +10,10 @@ export const USERS_ROUTES: Routes = [
     component: UserProfileComponent,
     canActivate: [authGuard]
   },
-  { 
-    path: '', 
-    component: UserListComponent 
+  {
+    path: 'profile/edit',
+    component: EditProfileComponent,
+    canActivate: [authGuard]
   },
   { 
     path: ':id', 

@@ -33,6 +33,16 @@
 
           <div class="form-group">
             <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Nickname</mat-label>
+              <input matInput formControlName="nickname" placeholder="Optional nickname">
+            </mat-form-field>
+            <mat-checkbox formControlName="displayOnlyNickname" color="primary">
+              Display only nickname to other users
+            </mat-checkbox>
+          </div>
+
+          <div class="form-group">
+            <mat-form-field appearance="outline" class="full-width">
               <mat-label>Email Address</mat-label>
               <input matInput formControlName="email" required type="email">
               @if (profileForm.get('email')?.hasError('required') && profileForm.get('email')?.touched) {
@@ -50,6 +60,26 @@
               <input matInput formControlName="phoneNumber" placeholder="e.g., +1 (123) 456-7890">
               @if (profileForm.get('phoneNumber')?.hasError('pattern') && profileForm.get('phoneNumber')?.touched) {
                 <mat-error>Please enter a valid phone number</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          <div class="form-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>City</mat-label>
+              <input matInput formControlName="city" placeholder="e.g., Seattle">
+            </mat-form-field>
+          </div>
+
+          <div class="form-group">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Skill Level (1.00-5.00)</mat-label>
+              <input matInput formControlName="skillLevel" type="number" step="0.01" min="1.00" max="5.00">
+              @if (profileForm.get('skillLevel')?.hasError('min') && profileForm.get('skillLevel')?.touched) {
+                <mat-error>Skill level must be at least 1.00</mat-error>
+              }
+              @if (profileForm.get('skillLevel')?.hasError('max') && profileForm.get('skillLevel')?.touched) {
+                <mat-error>Skill level cannot exceed 5.00</mat-error>
               }
             </mat-form-field>
           </div>

@@ -4,6 +4,13 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export type EventDocument = Event & Document;
 
+export enum RecurrenceType {
+  NONE = 'none',
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly'
+}
+
 @Schema({ timestamps: true })
 export class Event {
   @ApiProperty({ 
@@ -80,6 +87,30 @@ export class Event {
   })
   @Prop({ default: true })
   isDoublesAllowed: boolean;
+
+  @ApiProperty({
+    description: 'Series ID - connects recurring events together',
+    example: '60d0fe4f5311236168a109ca',
+  })
+  @Prop({ type: String })
+  seriesId: string;
+
+  @ApiProperty({
+    description: 'Recurrence type',
+    enum: RecurrenceType,
+    default: RecurrenceType.NONE,
+    example: 'weekly',
+  })
+  @Prop({ default: RecurrenceType.NONE, type: String, enum: RecurrenceType })
+  recurrenceType: RecurrenceType;
+
+  @ApiProperty({
+    description: 'End date for recurring events',
+    type: Date,
+    example: '2025-05-15T14:00:00Z',
+  })
+  @Prop()
+  recurrenceEndDate: Date;
 }
 
 export const EventSchema = SchemaFactory.createForClass(Event);

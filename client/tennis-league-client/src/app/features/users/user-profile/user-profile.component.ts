@@ -10,6 +10,8 @@ import { EventsService } from '../../events/events.service';
 import { Router } from '@angular/router';
 import { User, UserRole } from '../../../core/models/user.model';
 import { Event } from '../../../core/models/event.model';
+import { Rsvp } from '../../../core/models/rsvp.model';
+import { switchMap, forkJoin, of, catchError, map } from 'rxjs';
 
 interface PlayerStats {
   totalMatches: number;
@@ -86,11 +88,30 @@ export class UserProfileComponent implements OnInit {
   }
 
   loadUpcomingEvents(): void {
-    // Here we would fetch only the events this user is attending
-    // For now, we'll just get all upcoming events
-    this.eventsService.getUpcomingEvents().subscribe({
-      next: (events) => {
-        this.upcomingEvents = events;
+    // Get all upcoming events
+    this.eventsService.getUpcomingEvents().pipe(
+      // For each event, check if the user has RSVP'd as attending
+      switchMap(events => {
+        if (events.length === 0) {
+          return of([]);
+        }
+        
+        // Create an array of requests to get the user's RSVP for each event
+        const rsvpRequests = events.map(event => 
+          this.eventsService.getUserRsvp(event._id || '').pipe(
+            // If the RSVP exists and isAttending is true, return the event, otherwise return null
+            map((rsvp: Rsvp) => rsvp && rsvp.isAttending ? event : null),
+            catchError(() => of(null)) // Handle 404 (no RSVP found)
+          )
+        );
+        
+        // Combine all RSVP requests
+        return forkJoin(rsvpRequests);
+      })
+    ).subscribe({
+      next: (eventResults) => {
+        // Filter out null results and store only events user is attending
+        this.upcomingEvents = eventResults.filter(event => event !== null) as Event[];
       },
       error: (error) => {
         console.error('Error loading upcoming events:', error);
@@ -118,7 +139,7 @@ export class UserProfileComponent implements OnInit {
 
   editProfile(): void {
     // Navigate to the profile edit page
-    this.router.navigate(['/auth/profile/edit']);
+    this.router.navigate(['/users/profile/edit']);
   }
 
   logout(): void {

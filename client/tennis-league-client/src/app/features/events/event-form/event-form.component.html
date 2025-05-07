@@ -57,6 +57,30 @@
           </mat-form-field>
         </div>
 
+        <!-- Recurrence Section -->
+        <h3 class="section-header">Recurrence</h3>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="form-col" [class.disabled-field]="isEditMode">
+            <mat-label>Recurrence Pattern</mat-label>
+            <mat-select formControlName="recurrenceType">
+              <mat-option *ngFor="let type of recurrenceTypes" [value]="type.value">
+                {{ type.label }}
+              </mat-option>
+            </mat-select>
+            <mat-hint *ngIf="isEditMode">Recurrence cannot be changed after event creation</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="form-col" *ngIf="eventForm.get('recurrenceType')?.value !== 'none'" [class.disabled-field]="isEditMode">
+            <mat-label>Recurrence End Date</mat-label>
+            <input matInput [matDatepicker]="recurrencePicker" formControlName="recurrenceEndDate">
+            <mat-datepicker-toggle matIconSuffix [for]="recurrencePicker"></mat-datepicker-toggle>
+            <mat-datepicker #recurrencePicker></mat-datepicker>
+            <mat-error *ngIf="eventForm.get('recurrenceEndDate')?.hasError('required')">End date is required for recurring events</mat-error>
+            <mat-error *ngIf="eventForm.get('recurrenceEndDate')?.hasError('maxDateExceeded')">End date cannot be more than a year from today</mat-error>
+            <mat-error *ngIf="eventForm.get('recurrenceEndDate')?.hasError('endDateBeforeStartDate')">End date must be after the start date</mat-error>
+          </mat-form-field>
+        </div>
+
         <!-- Singles Players Section -->
         <h3 class="section-header">Singles Players</h3>
         <div class="form-row">

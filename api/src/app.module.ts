@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
 import { LineupsModule } from './lineups/lineups.module';
+import { RatingsModule } from './ratings/ratings.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { LineupsModule } from './lineups/lineups.module';
     UsersModule,
     EventsModule,
     LineupsModule,
+    RatingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

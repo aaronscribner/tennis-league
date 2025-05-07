@@ -188,6 +188,9 @@ export class Lineup {
   
   @Prop()
   date: Date;
+  
+  @Prop()
+  notes: string;
 }
 
 export const LineupSchema = SchemaFactory.createForClass(Lineup);

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../models/user.schema';
@@ -6,7 +6,11 @@ import { UserRole } from '../models/user.schema';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
+  private readonly logger = new Logger(UsersService.name);
+  
+  constructor(
+    @InjectModel(User.name) private userModel: Model<UserDocument>
+  ) {}
 
   async findAll(): Promise<User[]> {
     return this.userModel.find().exec();
@@ -30,15 +34,23 @@ export class UsersService {
 
   async create(createUserDto: Partial<User>): Promise<User> {
     const newUser = new this.userModel(createUserDto);
-    return newUser.save();
+    const savedUser = await newUser.save();
+    return savedUser;
   }
 
   async update(id: string, updateUserDto: Partial<User>): Promise<User> {
-    const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true }).exec();
-    if (!user) {
+    const existingUser = await this.userModel.findById(id).exec();
+    if (!existingUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    return user;
+    
+    // Update the user
+    const updatedUser = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true }).exec();
+    if (!updatedUser) {
+      throw new NotFoundException(`User with ID ${id} not found after update`);
+    }
+    
+    return updatedUser;
   }
 
   async setRole(id: string, role: UserRole): Promise<User> {

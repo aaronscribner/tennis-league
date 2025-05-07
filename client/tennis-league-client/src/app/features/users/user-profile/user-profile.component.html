@@ -12,7 +12,19 @@
         </div>
       </div>
       <div class="name-section">
-        <h1>{{ userProfile.firstName }} {{ userProfile.lastName }}</h1>
+        <h1>
+          <!-- Show nickname if user prefers, otherwise show full name -->
+          <ng-container *ngIf="userProfile.displayOnlyNickname && userProfile.nickname; else fullName">
+            {{ userProfile.nickname }}
+            <mat-icon class="info-icon" matTooltip="Real name hidden" color="primary">info</mat-icon>
+          </ng-container>
+          <ng-template #fullName>
+            {{ userProfile.firstName }} {{ userProfile.lastName }}
+            <span *ngIf="userProfile.nickname" class="nickname" [ngClass]="{'nickname-hidden': userProfile.displayOnlyNickname}">
+              ({{ userProfile.nickname }})
+            </span>
+          </ng-template>
+        </h1>
         <div class="user-role" [ngClass]="{'coordinator': isCoordinator()}">
           {{ isCoordinator() ? 'Coordinator' : 'Player' }}
         </div>
@@ -25,16 +37,26 @@
       </mat-card-header>
       <mat-card-content>
         <div class="detail-grid">
-          <div class="detail-row">
+          <!-- Show email only if not using nickname display preference -->
+          <div *ngIf="!userProfile.displayOnlyNickname" class="detail-row">
             <div class="detail-label">Email</div>
             <div class="detail-value">{{ userProfile.email }}</div>
+          </div>
+
+          <!-- Show nickname if available -->
+          <div *ngIf="userProfile.nickname && !userProfile.displayOnlyNickname" class="detail-row">
+            <div class="detail-label">Nickname</div>
+            <div class="detail-value">{{ userProfile.nickname }}</div>
           </div>
 
           <div class="detail-row">
             <div class="detail-label">Skill Level</div>
             <div class="detail-value">
               <div class="skill-rating">
-                <span>{{ userProfile.skillLevel }}</span>/10
+                <span>{{ userProfile.skillLevel.toFixed(2) }}</span>/5.00
+                <div class="config-info" *ngIf="userProfile.city">
+                  <small>Based on {{ userProfile.city }} dynamic rating configuration</small>
+                </div>
               </div>
             </div>
           </div>

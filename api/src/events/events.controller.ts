@@ -5,6 +5,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { UserRole } from '../models/user.schema';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { UpdateEventSeriesDto } from './dto/update-event-series.dto';
 
 @ApiTags('events')
 @Controller('events')
@@ -86,6 +87,46 @@ export class EventsController {
     return this.eventsService.remove(id);
   }
 
+  // Event series endpoints
+  @ApiOperation({ summary: 'Get all events in a series' })
+  @ApiParam({ name: 'seriesId', description: 'Event Series ID' })
+  @ApiResponse({ status: 200, description: 'Return all events in the series' })
+  @ApiResponse({ status: 404, description: 'Series not found' })
+  @Get('series/:seriesId')
+  findEventsBySeries(@Param('seriesId') seriesId: string) {
+    return this.eventsService.findEventsBySeries(seriesId);
+  }
+
+  @ApiOperation({ summary: 'Cancel all events in a series' })
+  @ApiParam({ name: 'seriesId', description: 'Event Series ID' })
+  @ApiResponse({ status: 200, description: 'Series successfully cancelled' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Series not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COORDINATOR)
+  @Patch('series/:seriesId/cancel')
+  cancelEventSeries(@Param('seriesId') seriesId: string) {
+    return this.eventsService.cancelEventSeries(seriesId);
+  }
+
+  @ApiOperation({ summary: 'Update all events in a series' })
+  @ApiParam({ name: 'seriesId', description: 'Event Series ID' })
+  @ApiBody({ description: 'Updated series data', type: UpdateEventSeriesDto })
+  @ApiResponse({ status: 200, description: 'Series successfully updated' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Series not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COORDINATOR)
+  @Patch('series/:seriesId/update')
+  updateEventSeries(
+    @Param('seriesId') seriesId: string,
+    @Body() updateEventDto: UpdateEventSeriesDto
+  ) {
+    return this.eventsService.updateEventSeries(seriesId, updateEventDto);
+  }
+
   // RSVP endpoints
   @ApiOperation({ summary: 'Get all RSVPs for an event' })
   @ApiParam({ name: 'id', description: 'Event ID' })
@@ -94,6 +135,24 @@ export class EventsController {
   @Get(':id/rsvps')
   getRsvps(@Param('id') id: string) {
     return this.eventsService.getRsvpsByEvent(id);
+  }
+
+  @ApiOperation({ summary: 'Get current user\'s RSVP for an event' })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Return the user\'s RSVP for the event' })
+  @ApiResponse({ status: 404, description: 'RSVP not found' })
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/rsvp')
+  async getUserRsvp(@Param('id') eventId: string, @Request() req) {
+    const userId = req.user.userId;
+    const rsvp = await this.eventsService.getUserRsvp(eventId, userId);
+    
+    if (!rsvp) {
+      throw new HttpException('RSVP not found', HttpStatus.NOT_FOUND);
+    }
+    
+    return rsvp;
   }
 
   @ApiOperation({ summary: 'Create or update RSVP for an event' })

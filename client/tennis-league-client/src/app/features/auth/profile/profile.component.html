@@ -3,25 +3,61 @@
     <mat-card-header>
       <div mat-card-avatar class="profile-avatar"></div>
       <mat-card-title>My Profile</mat-card-title>
-      <mat-card-subtitle *ngIf="authService.currentUser()">{{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}</mat-card-subtitle>
+      <mat-card-subtitle *ngIf="authService.currentUser()">
+        {{ authService.currentUser()?.firstName }} {{ authService.currentUser()?.lastName }}
+        @if (authService.currentUser()?.nickname) {
+          <span class="nickname" [ngClass]="{'nickname-hidden': authService.currentUser()?.displayOnlyNickname}">
+            ({{ authService.currentUser()?.nickname }})
+            @if (authService.currentUser()?.displayOnlyNickname) {
+              <mat-icon class="info-icon" matTooltip="Real name hidden" color="primary" inline="true">info</mat-icon>
+            }
+          </span>
+        }
+      </mat-card-subtitle>
     </mat-card-header>
     
     <mat-card-content>
       @if (authService.currentUser(); as user) {
         <div class="profile-details">
           <div class="profile-row">
+            <strong>Name:</strong>
+            <span>{{ user.firstName }} {{ user.lastName }}</span>
+          </div>
+          
+          @if (user.nickname) {
+          <div class="profile-row">
+            <strong>Nickname:</strong>
+            <span [ngClass]="{'nickname-hidden': user.displayOnlyNickname}">
+              {{ user.nickname }}
+              @if (user.displayOnlyNickname) {
+                <mat-icon class="info-icon" matTooltip="Real name hidden" color="primary" inline="true">info</mat-icon>
+              }
+            </span>
+          </div>
+          }
+          
+          <div class="profile-row">
             <strong>Email:</strong>
             <span>{{ user.email }}</span>
           </div>
           
+          @if (user.phoneNumber) {
+          <div class="profile-row">
+            <strong>Phone:</strong>
+            <span>{{ user.phoneNumber }}</span>
+          </div>
+          }
+          
+          @if (user.city) {
+          <div class="profile-row">
+            <strong>City:</strong>
+            <span>{{ user.city }}</span>
+          </div>
+          }
+          
           <div class="profile-row">
             <strong>Auth0 ID:</strong>
             <span>{{ user.auth0Id }}</span>
-          </div>
-          
-          <div class="profile-row">
-            <strong>Name:</strong>
-            <span>{{ user.firstName }} {{ user.lastName }}</span>
           </div>
           
           <div class="profile-row">
@@ -31,8 +67,18 @@
           
           <div class="profile-row">
             <strong>Skill Level:</strong>
-            <span>{{ user.skillLevel }}</span>
+            <span>{{ user.skillLevel.toFixed(2) }}</span>
           </div>
+
+          @if (user.displayOnlyNickname) {
+          <div class="profile-row">
+            <strong>Display Settings:</strong>
+            <span class="nickname-hidden">
+              Only showing nickname to other users
+              <mat-icon class="info-icon" matTooltip="Real name hidden" color="primary" inline="true">info</mat-icon>
+            </span>
+          </div>
+          }
           
           <div class="profile-row">
             <strong>Play Preferences:</strong>

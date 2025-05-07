@@ -19,6 +19,14 @@ export class User {
   @Prop({ required: false })
   lastName: string;
 
+  @ApiProperty({ description: 'User nickname', example: 'JD', required: false })
+  @Prop({ required: false })
+  nickname: string;
+
+  @ApiProperty({ description: 'Whether to display only nickname to other users', example: false, default: false })
+  @Prop({ default: false })
+  displayOnlyNickname: boolean;
+
   @ApiProperty({ description: 'User email address', example: 'john.doe@example.com' })
   @Prop({ required: true, unique: true })
   email: string;
@@ -26,6 +34,10 @@ export class User {
   @ApiProperty({ description: 'User phone number', example: '+1 (123) 456-7890', required: false })
   @Prop({ required: false })
   phoneNumber: string;
+
+  @ApiProperty({ description: 'User city', example: 'Seattle', required: false })
+  @Prop({ required: false })
+  city: string;
 
   @ApiProperty({ description: 'Auth0 user ID', example: 'auth0|1234567890' })
   @Prop({ required: true })
@@ -53,13 +65,13 @@ export class User {
   isActive: boolean;
 
   @ApiProperty({ 
-    description: 'User tennis skill level (0-10)', 
-    default: 0, 
-    minimum: 0, 
-    maximum: 10,
-    example: 5 
+    description: 'User tennis skill level (1.00-5.00)', 
+    default: 1.00, 
+    minimum: 1.00, 
+    maximum: 5.00,
+    example: 3.75 
   })
-  @Prop({ default: 0 })
+  @Prop({ default: 1.00, type: Number })
   skillLevel: number;
 
   @ApiProperty({ 

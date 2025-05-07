@@ -24,8 +24,14 @@
         <button *ngIf="isCoordinator() && !event.isCancelled" mat-stroked-button color="primary" (click)="editEvent()">
           <mat-icon>edit</mat-icon> Edit
         </button>
+        <button *ngIf="isCoordinator() && !event.isCancelled && isPartOfSeries()" mat-stroked-button color="primary" (click)="editEventSeries()">
+          <mat-icon>event_repeat</mat-icon> Edit Series
+        </button>
         <button *ngIf="isCoordinator() && !event.isCancelled" mat-stroked-button color="warn" (click)="cancelEvent()">
           <mat-icon>cancel</mat-icon> Cancel Event
+        </button>
+        <button *ngIf="isCoordinator() && !event.isCancelled && isPartOfSeries()" mat-stroked-button color="warn" (click)="cancelEventSeries()">
+          <mat-icon>cancel_presentation</mat-icon> Cancel Series
         </button>
       </div>
     </div>

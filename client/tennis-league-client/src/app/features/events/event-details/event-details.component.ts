@@ -9,7 +9,7 @@ import { EventsService } from '../events.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LineupsService } from '../../lineups/lineups.service';
 
-import { Event } from '../../../core/models/event.model';
+import { Event, RecurrenceType } from '../../../core/models/event.model';
 import { User, UserRole } from '../../../core/models/user.model';
 import { Rsvp } from '../../../core/models/rsvp.model';
 import { Lineup } from '../../../core/models/match.model';
@@ -238,6 +238,12 @@ export class EventDetailsComponent implements OnInit {
   editEvent(): void {
     this.router.navigate(['/events', this.eventId, 'edit']);
   }
+  
+  editEventSeries(): void {
+    if (!this.event?.seriesId) return;
+    
+    this.router.navigate(['/events', 'series', this.event.seriesId, 'edit']);
+  }
 
   cancelEvent(): void {
     if (!this.eventId) return;
@@ -260,8 +266,36 @@ export class EventDetailsComponent implements OnInit {
     }
   }
 
+  cancelEventSeries(): void {
+    if (!this.event?.seriesId) return;
+    
+    if (confirm('Are you sure you want to cancel ALL events in this series? This cannot be undone.')) {
+      this.eventsService.cancelEventSeries(this.event.seriesId).subscribe({
+        next: () => {
+          this.snackBar.open('Event series cancelled successfully', 'Close', {
+            duration: 3000
+          });
+          this.router.navigate(['/events']);
+        },
+        error: (error) => {
+          console.error('Error cancelling event series:', error);
+          this.snackBar.open('Error cancelling event series. Please try again.', 'Close', {
+            duration: 5000
+          });
+        }
+      });
+    }
+  }
+
+  isPartOfSeries(): boolean {
+    console.log("isPartOfSeries", this.event?.seriesId);
+    return this.event?.seriesId ? true : false;
+  }
+
   isEventFull(): boolean {
-    if (!this.event) return false;
+    if (!this.event) {
+      return false;
+    }
     
     const attendeesCount = this.event.attendees ? this.event.attendees.length : 0;
     
@@ -269,13 +303,8 @@ export class EventDetailsComponent implements OnInit {
     if (this.event.isSinglesAllowed && attendeesCount < this.event.maxSinglesPlayers) {
       return false;
     }
-    
-    if (this.event.isDoublesAllowed && attendeesCount < this.event.maxDoublesPlayers) {
-      return false;
-    }
-    
-    // If we got here, either the event doesn't allow singles/doubles or all spots are taken
-    return true;
+
+    return this.event.isDoublesAllowed && attendeesCount < this.event.maxDoublesPlayers;
   }
   
   calculateRemainingSpots(): { singles: number, doubles: number, totalAttendees: number } {

@@ -10,6 +10,9 @@ export interface User {
   lastName: string;
   email: string;
   phoneNumber?: string; // Added phone number field
+  city?: string; // Added city field
+  nickname?: string; // Added nickname field
+  displayOnlyNickname?: boolean; // Added display preference for nickname
   auth0Id: string;
   role: UserRole;
   roles?: string[]; // Adding roles array for backwards compatibility

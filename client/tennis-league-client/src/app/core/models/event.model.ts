@@ -1,5 +1,12 @@
 import { User } from './user.model';
 
+export enum RecurrenceType {
+  NONE = 'none',
+  DAILY = 'daily',
+  WEEKLY = 'weekly',
+  MONTHLY = 'monthly'
+}
+
 export interface Event {
   _id?: string;
   title: string;
@@ -14,4 +21,7 @@ export interface Event {
   isDoublesAllowed: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  seriesId?: string;
+  recurrenceType?: RecurrenceType;
+  recurrenceEndDate?: Date;
 }
