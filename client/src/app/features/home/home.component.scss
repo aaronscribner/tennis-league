@@ -1,0 +1,55 @@
+.home-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 64px); /* Adjust for toolbar height */
+  padding: 20px;
+}
+
+.image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 100%;
+}
+
+.maitchplay-image {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  
+}
+
+.button-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px; /* Match this to your image width or desired button width */
+  gap: 16px;
+}
+
+.action-button {
+  width: 100%;
+  padding: 12px 0;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 4px;
+  background-color: #1976d2; /* Material primary blue */
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+.action-button:hover {
+  background-color: #1565c0; /* Slightly darker blue on hover */
+}
+
+@media (max-width: 768px) {
+  .home-container {
+    min-height: calc(100vh - 56px); /* Adjust for smaller toolbar on mobile */
+  }
+  
+  .button-container {
+    width: 90%;
+  }
+}

@@ -26,13 +26,15 @@ export class RolesGuard implements CanActivate {
       return false;
     }
     
+    const requiredRolesLower = requiredRoles.map(role => String(role).toLowerCase());
+    
     // First check if user has roles from Auth0 token
     if (user.roles && Array.isArray(user.roles)) {
-      const auth0Roles = user.roles.map(role => role.toLowerCase());
+      const auth0Roles = user.roles.map(role => String(role).toLowerCase());
       
       // Check if any required role is in the Auth0 roles
-      const hasRoleFromAuth0 = requiredRoles.some(role => 
-        auth0Roles.includes(role.toLowerCase())
+      const hasRoleFromAuth0 = requiredRolesLower.some(role => 
+        auth0Roles.includes(role)
       );
       
       if (hasRoleFromAuth0) {
@@ -47,15 +49,15 @@ export class RolesGuard implements CanActivate {
       return false;
     }
     
-    // Check primary role
-    if (requiredRoles.includes(dbUser.role)) {
+    // Check primary role (convert to lowercase for consistent comparison)
+    if (dbUser.role && requiredRolesLower.includes(String(dbUser.role).toLowerCase())) {
       return true;
     }
     
     // Check roles array in database
     if (dbUser.roles && Array.isArray(dbUser.roles) && dbUser.roles.length > 0) {
-      const userRoles = dbUser.roles.map(role => role.toLowerCase());
-      return requiredRoles.some(role => userRoles.includes(role.toLowerCase()));
+      const userRoles = dbUser.roles.map(role => String(role).toLowerCase());
+      return requiredRolesLower.some(role => userRoles.includes(role));
     }
     
     return false;

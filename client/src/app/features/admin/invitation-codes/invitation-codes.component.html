@@ -1,0 +1,135 @@
+<div class="invitation-codes-container">
+  <div class="header">
+    <h1>Manage Invitation Codes</h1>
+    <p class="subtitle">Create and manage invitation codes for new users to join the platform</p>
+  </div>
+
+  <div class="form-section mat-elevation-z2">
+    <h2>Create New Invitation Code</h2>
+    
+    <form [formGroup]="codeForm" (ngSubmit)="createCode()">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Code (Optional, will be generated if empty)</mat-label>
+          <input matInput formControlName="code" placeholder="TENNI2025">
+          <button mat-icon-button matSuffix type="button" (click)="generateRandomCode()" matTooltip="Generate random code">
+            <mat-icon>shuffle</mat-icon>
+          </button>
+          <mat-hint>Leave empty for auto-generation</mat-hint>
+          <mat-error *ngIf="codeForm.get('code')?.hasError('minlength')">
+            Code must be at least 4 characters
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Description (Optional)</mat-label>
+          <input matInput formControlName="description" placeholder="For Spring 2025 tournament">
+          <mat-hint>Brief description of this code's purpose</mat-hint>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Email (Optional)</mat-label>
+          <input matInput type="email" formControlName="email" placeholder="user@example.com">
+          <mat-hint>Restrict code to specific email</mat-hint>
+          <mat-error *ngIf="codeForm.get('email')?.hasError('email')">
+            Please enter a valid email
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Expires At (Optional)</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="expiresAt">
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-hint>Leave blank for no expiration</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-actions">
+        <button mat-raised-button color="primary" type="submit" [disabled]="codeForm.invalid">
+          Create Invitation Code
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <div class="table-section mat-elevation-z2">
+    <h2>Existing Invitation Codes</h2>
+
+    <div *ngIf="loading" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading invitation codes...</p>
+    </div>
+
+    <div *ngIf="!loading && invitationCodes.length === 0" class="no-data-message">
+      <p>No invitation codes found. Create your first one using the form above.</p>
+    </div>
+
+    <mat-table *ngIf="!loading && invitationCodes.length > 0" [dataSource]="invitationCodes" class="mat-elevation-z0">
+      <!-- Code Column -->
+      <ng-container matColumnDef="code">
+        <mat-header-cell *matHeaderCellDef>Code</mat-header-cell>
+        <mat-cell *matCellDef="let item">
+          <div class="code-cell">
+            <span>{{ item.code }}</span>
+            <button mat-icon-button (click)="copyToClipboard(item.code)" matTooltip="Copy code">
+              <mat-icon>content_copy</mat-icon>
+            </button>
+          </div>
+        </mat-cell>
+      </ng-container>
+
+      <!-- Description Column -->
+      <ng-container matColumnDef="description">
+        <mat-header-cell *matHeaderCellDef>Description</mat-header-cell>
+        <mat-cell *matCellDef="let item">{{ item.description || '-' }}</mat-cell>
+      </ng-container>
+
+      <!-- Email Column -->
+      <ng-container matColumnDef="email">
+        <mat-header-cell *matHeaderCellDef>Email</mat-header-cell>
+        <mat-cell *matCellDef="let item">{{ item.email || '-' }}</mat-cell>
+      </ng-container>
+
+      <!-- Expires At Column -->
+      <ng-container matColumnDef="expiresAt">
+        <mat-header-cell *matHeaderCellDef>Expires</mat-header-cell>
+        <mat-cell *matCellDef="let item">
+          {{ item.expiresAt ? (item.expiresAt | date) : 'Never' }}
+        </mat-cell>
+      </ng-container>
+
+      <!-- IsUsed Column -->
+      <ng-container matColumnDef="isUsed">
+        <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+        <mat-cell *matCellDef="let item">
+          <mat-chip-set>
+            <mat-chip [color]="item.isUsed ? 'warn' : 'primary'">
+              {{ item.isUsed ? 'Used' : 'Available' }}
+            </mat-chip>
+          </mat-chip-set>
+        </mat-cell>
+      </ng-container>
+
+      <!-- Used By Email Column -->
+      <ng-container matColumnDef="usedByEmail">
+        <mat-header-cell *matHeaderCellDef>Used By</mat-header-cell>
+        <mat-cell *matCellDef="let item">{{ item.usedByEmail || '-' }}</mat-cell>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <mat-header-cell *matHeaderCellDef>Actions</mat-header-cell>
+        <mat-cell *matCellDef="let item">
+          <button mat-icon-button color="warn" (click)="deleteCode(item._id)" 
+                  matTooltip="Delete" [disabled]="item.isUsed">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </mat-cell>
+      </ng-container>
+
+      <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+      <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>
+    </mat-table>
+  </div>
+</div>

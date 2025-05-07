@@ -25,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // so we just need to extract any additional claims we need
     
     // Extract roles from Auth0 token using the standard namespace format
-    const namespace = 'https://api.tennis-league.com';
+    const namespace = 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/';
     const roles = payload[`${namespace}/roles`] || [];
     const permissions = payload[`${namespace}/permissions`] || [];
                  

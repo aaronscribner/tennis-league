@@ -1,0 +1,21 @@
+name = "tennis-league-api"
+main = "dist/main.js"
+compatibility_date = "2025-05-06"
+node_compat = true
+
+[build]
+command = "npm run build"
+
+[site]
+bucket = "./dist"
+
+[env.production]
+route = "api.tennis-league.com/*"
+zone_id = "d42de09b12bb8cafb72a0fff7f51cd18"
+
+[vars]
+NODE_ENV = "production"
+
+# Example of setting secrets via Wrangler CLI (run these commands separately):
+# npx wrangler secret put JWT_SECRET
+# npx wrangler secret put DATABASE_URL

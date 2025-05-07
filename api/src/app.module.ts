@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
 import { LineupsModule } from './lineups/lineups.module';
 import { RatingsModule } from './ratings/ratings.module';
+import { InvitationCodesModule } from './invitation-codes/invitation-codes.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RatingsModule } from './ratings/ratings.module';
     EventsModule,
     LineupsModule,
     RatingsModule,
+    InvitationCodesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
