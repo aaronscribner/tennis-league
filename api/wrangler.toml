@@ -1,6 +1,7 @@
 name = "tennis-league-api"
 main = "dist/main.js"
 compatibility_date = "2025-05-06"
+compatibility_flags = ["nodejs_compat"]
 
 [build]
 command = "npm run build"
