@@ -6,7 +6,6 @@ account_id = "" # Fill in your Cloudflare account ID here
 
 [site]
 bucket = "./dist"
-entry-point = "."
 
 [build]
 command = "npm run build:worker"
