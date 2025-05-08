@@ -17,7 +17,11 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "wrangler:dev": "wrangler dev --local",
+    "wrangler:preview": "wrangler dev",
+    "wrangler:deploy:dev": "wrangler deploy --env development",
+    "wrangler:deploy:prod": "wrangler deploy --env production"
   },
   "dependencies": {
     "@azure/identity": "^4.9.1",
