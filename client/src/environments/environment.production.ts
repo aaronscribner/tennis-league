@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://tennis-league-api.fly.dev',
+  apiUrl: 'https://api.maitchplay.com',
   auth0: {
     domain: 'dev-ik81nhdv5j46bwjt.us.auth0.com',
     clientId: 'gZo9AwUnNoOBE2eQ8AdZytbR1zSIk41B',
@@ -15,7 +15,7 @@ export const environment = {
     httpInterceptor: {
       allowedList: [
         {
-          uri: 'https://tennis-league-api.fly.dev/*',
+          uri: 'https://api.maitchplay.com/*',
           tokenOptions: {
             authorizationParams: {
               audience: 'https://dev-ik81nhdv5j46bwjt.us.auth0.com/api/v2/'
