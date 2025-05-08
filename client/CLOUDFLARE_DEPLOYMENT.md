@@ -39,7 +39,7 @@ To manually deploy the application to Cloudflare Pages:
 3. Select your repository and configure the following build settings:
    - Framework preset: None
    - Build command: `npm run cloudflare:build`
-   - Build output directory: `dist/tennis-league-client`
+   - Build output directory: `dist
    - Environment variables (if needed): Set according to your requirements
    
 4. Deploy the site and you're ready to go!
