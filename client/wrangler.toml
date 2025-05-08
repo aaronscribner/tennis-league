@@ -1,17 +1,18 @@
 [site]
 bucket = "./dist"
 entry-point = "."
-pages_build_output_dir = "dist"
 
 name = "tennis-league"
+type = "webpack"
+account_id = "" # You'll need to fill in your Cloudflare account ID here
 
 [build]
 command = "npm run build"
-output_dir = "dist"
+upload.format = "service-worker"
 
-[build.upload]
-format = "directory"
+[env.production]
+workers_dev = false
+# route = "" # Add your production route if needed
 
-# Enable the Pages Functions API to use advanced functionality
-[build.environment]
-CLOUDFLARE_PAGES = "true"
+[env.development]
+workers_dev = true
