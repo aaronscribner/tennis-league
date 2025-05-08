@@ -1,18 +1,20 @@
+name = "tennis-league-client"
+main = "worker.js"
+compatibility_date = "2025-05-07"
+
+account_id = "" # Fill in your Cloudflare account ID here
+
 [site]
 bucket = "./dist"
 entry-point = "."
 
-name = "tennis-league"
-type = "webpack"
-account_id = "" # You'll need to fill in your Cloudflare account ID here
-
 [build]
-command = "npm run build"
+command = "npm run build:worker"
 upload.format = "service-worker"
 
 [env.production]
 workers_dev = false
-# route = "" # Add your production route if needed
+# route = "example.com/*" # Add your domain here when deploying to production
 
 [env.development]
 workers_dev = true
