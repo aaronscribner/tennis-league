@@ -1,0 +1,10 @@
+[site]
+bucket = "./dist/tennis-league-client"
+entry-point = "./dist/tennis-league-client"
+
+[build]
+command = "npm run cloudflare:build"
+output_dir = "dist/tennis-league-client"
+
+[build.environment]
+NODE_VERSION = "20"

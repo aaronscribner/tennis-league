@@ -14,11 +14,12 @@ export class InvitationCode {
   code: string;
 
   @ApiProperty({ 
-    description: 'Optional email this code is restricted to',
-    example: 'player@example.com', 
+    description: 'Email this code is restricted to',
+    example: 'player@example.com',
+    required: true,
   })
-  @Prop()
-  email?: string;
+  @Prop({ required: true })
+  email: string;
 
   @ApiProperty({ 
     description: 'When the code expires',

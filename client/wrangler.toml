@@ -1,0 +1,14 @@
+[site]
+bucket = "./dist/tennis-league-client"
+entry-point = "."
+
+[build]
+command = "npm run build"
+output_dir = "dist/tennis-league-client"
+
+[build.upload]
+format = "directory"
+
+# Enable the Pages Functions API to use advanced functionality
+[build.environment]
+CLOUDFLARE_PAGES = "true"

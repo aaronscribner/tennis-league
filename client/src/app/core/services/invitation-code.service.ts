@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, Inject } from '@angular/core';
+import { HttpClient, HttpBackend } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
@@ -10,8 +10,15 @@ import { InvitationCode } from '../models/invitation-code.model';
 })
 export class InvitationCodeService {
   private apiUrl = `${environment.apiUrl}/invitation-codes`;
+  private httpWithoutInterceptors: HttpClient;
 
-  constructor(private http: HttpClient) {}
+  constructor(
+    private http: HttpClient,
+    private httpBackend: HttpBackend
+  ) {
+    // Create an HttpClient instance that bypasses all interceptors
+    this.httpWithoutInterceptors = new HttpClient(httpBackend);
+  }
 
   /**
    * Get all invitation codes (admin only)
@@ -56,7 +63,8 @@ export class InvitationCodeService {
     if (email) {
       url += `?email=${encodeURIComponent(email)}`;
     }
-    return this.http.get<{ valid: boolean }>(url).pipe(
+    // Use the HttpClient instance that bypasses interceptors
+    return this.httpWithoutInterceptors.get<{ valid: boolean }>(url).pipe(
       map(response => response.valid)
     );
   }

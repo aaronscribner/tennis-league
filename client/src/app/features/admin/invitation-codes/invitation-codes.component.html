@@ -23,15 +23,18 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Description (Optional)</mat-label>
-          <input matInput formControlName="description" placeholder="For Spring 2025 tournament">
+          <input matInput formControlName="notes" placeholder="For Spring 2025 tournament">
           <mat-hint>Brief description of this code's purpose</mat-hint>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Email (Optional)</mat-label>
-          <input matInput type="email" formControlName="email" placeholder="user@example.com">
-          <mat-hint>Restrict code to specific email</mat-hint>
-          <mat-error *ngIf="codeForm.get('email')?.hasError('email')">
+          <mat-label>Email *</mat-label>
+          <input matInput type="email" formControlName="email" placeholder="user@example.com" required>
+          <mat-hint>Email that this code is restricted to</mat-hint>
+          <mat-error *ngIf="codeForm.get('email')?.hasError('required')">
+            Email is required
+          </mat-error>
+          <mat-error *ngIf="codeForm.get('email')?.hasError('email') && !codeForm.get('email')?.hasError('required')">
             Please enter a valid email
           </mat-error>
         </mat-form-field>
@@ -80,9 +83,9 @@
       </ng-container>
 
       <!-- Description Column -->
-      <ng-container matColumnDef="description">
+      <ng-container matColumnDef="notes">
         <mat-header-cell *matHeaderCellDef>Description</mat-header-cell>
-        <mat-cell *matCellDef="let item">{{ item.description || '-' }}</mat-cell>
+        <mat-cell *matCellDef="let item">{{ item.notes || '-' }}</mat-cell>
       </ng-container>
 
       <!-- Email Column -->

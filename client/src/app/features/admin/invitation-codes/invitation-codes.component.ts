@@ -19,7 +19,7 @@ export class InvitationCodesComponent implements OnInit {
   invitationCodes: InvitationCode[] = [];
   loading = true;
   codeForm: FormGroup;
-  displayedColumns: string[] = ['code', 'description', 'email', 'expiresAt', 'isUsed', 'usedByEmail', 'actions'];
+  displayedColumns: string[] = ['code', 'notes', 'email', 'expiresAt', 'isUsed', 'usedByEmail', 'actions'];
   
   constructor(
     private invitationCodeService: InvitationCodeService,
@@ -29,8 +29,8 @@ export class InvitationCodesComponent implements OnInit {
   ) {
     this.codeForm = this.fb.group({
       code: ['', [Validators.minLength(4), Validators.maxLength(20)]],
-      description: [''],
-      email: ['', [Validators.email]],
+      notes: [''], // Changed from description to notes
+      email: ['', [Validators.required, Validators.email]],
       expiresAt: ['']
     });
   }
@@ -69,10 +69,11 @@ export class InvitationCodesComponent implements OnInit {
     }
     
     this.invitationCodeService.createCode(newCode).subscribe({
-      next: (code) => {
-        this.invitationCodes.unshift(code);
+      next: () => {
         this.snackBar.open('Invitation code created successfully', 'Close', { duration: 3000 });
         this.codeForm.reset();
+        // Refresh the entire list to ensure we have the most up-to-date data
+        this.loadCodes();
       },
       error: (err) => {
         console.error('Error creating invitation code', err);
