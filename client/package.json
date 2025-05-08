@@ -7,8 +7,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "cloudflare:dev": "wrangler pages dev dist --local",
-    "cloudflare:deploy": "ng build --configuration cloudflare && wrangler pages deploy dist",
+    "cloudflare:dev": "ng build --configuration cloudflare && wrangler dev",
+    "cloudflare:deploy": "ng build --configuration cloudflare && wrangler deploy",
     "cloudflare:build": "ng build --configuration cloudflare"
   },
   "private": true,
