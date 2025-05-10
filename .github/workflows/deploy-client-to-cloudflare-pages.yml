@@ -33,13 +33,10 @@ jobs:
         working-directory: client
         run: npm run build:worker
       
-      - name: Install Cloudflare Wrangler
-        run: npm install -g wrangler
-
-      - name: Deploy to Cloudflare Pages
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          cd client
-          npx wrangler pages deploy dist --project-name=tennis-league-client --commit-message="Deployed from GitHub Actions"
+      - name: Publish to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: 'client'
+          command: pages deploy dist --project-name=maitchplay-client-production --commit-message="Deployed from GitHub Actions"
